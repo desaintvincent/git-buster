@@ -6,10 +6,37 @@
     <title>Gitlab speculum</title>
 </head>
 <body>
-<h1>
+<h1 class="h1 title">
     Gitlab speculum
 </h1>
-<button id="button-reload" class="full">Reload</button>
+<div class="row">
+    <div>
+        <input type="checkbox" id="enable" name="enable" />
+        <label for="enable">Enable</label>
+    </div>
+    <div class="input-container">
+        <label for="baseUrl">BaseUrl</label>
+        <input type="text" id="baseUrl" name="baseUrl" />
+    </div>
+    <div class="input-container">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" />
+    </div>
+    <div>
+        <input type="checkbox" id="skipDrafts" name="skipDrafts" />
+        <label for="skipDrafts">Skip drafts</label>
+    </div>
+    <div>
+        <button id="save">save</button>
+    </div>
+    <div>
+        <button id="button-reload">Reload</button>
+    </div>
+    <div>
+        <div id="notif"></div>
+    </div>
+</div>
+
 </body>
 <script src="popup.js" type="text/javascript"></script>
 </html>

@@ -6,10 +6,24 @@ body {
     height: 4rem;
 }
 
-.full {
+button {
     width: 100%;
 }
 
-.special-text {
-    color: red;
+.row {
+    display: flex;
+    flex-direction: column;
+}
+
+.input-container {
+    display: flex;
+    align-items: center;
+}
+
+.input-container label {
+    margin-right: 12px;
+}
+
+.input-container input {
+    flex: 1;
 }

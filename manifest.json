@@ -14,7 +14,9 @@
         "default_title": "Gitlab speculum",
         "default_popup": "popup/popup.html"
     },
-    "permissions": [],
+    "permissions": [
+        "storage"
+    ],
     "host_permissions": [
         "*://*/*"
     ],
@@ -23,6 +25,6 @@
     },
     "content_scripts": [{
         "js": ["build/index.js"],
-        "matches": ["https://git.lab.viaco.fr/*"]
+        "matches": ["<all_urls>"]
     }]
 }
