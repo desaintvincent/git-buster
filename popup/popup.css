@@ -1,0 +1,15 @@
+body {
+    background-color: #222;
+    color: #eee;
+
+    width: 16rem;
+    height: 4rem;
+}
+
+.full {
+    width: 100%;
+}
+
+.special-text {
+    color: red;
+}

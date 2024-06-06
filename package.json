@@ -1,0 +1,15 @@
+{
+  "name": "gitlab-speculum",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc --watch "
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "tsc": "^2.0.4",
+    "typescript": "^5.4.5"
+  }
+}
