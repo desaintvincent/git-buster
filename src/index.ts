@@ -186,6 +186,8 @@ const setBadge = (mr: MR) => {
         <div><br/></div>
         <div style="color: ${colors[BADGE.DONE]}">Can be merged</div>
     </div>`
+
+        return
     }
 
     issueInfoElem.innerHTML += `<div>
