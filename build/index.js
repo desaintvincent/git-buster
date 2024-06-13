@@ -39,9 +39,9 @@ const tagToBadgeForMe = {
 };
 // /!\ is in order
 const tagToBadgeForOthers = {
-    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.WAIT,
     [TAG.CI_UNSUCCESSFUL]: BADGE.WAIT,
     [TAG.NOT_APPROVED_BY_ME]: BADGE.ACTIONS,
+    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.WAIT,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NEED_REBASE]: BADGE.WAIT,
 };
@@ -160,20 +160,21 @@ const processApprovals = (elem, mr) => __awaiter(void 0, void 0, void 0, functio
     const approval = yield myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`);
     if (!approval.approved) {
         const color = ((isMrMine(mr)) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS]);
+        if (!isMrMine(mr)) {
+            addTag(mr, TAG.NOT_APPROVED_BY_ME);
+        }
         addTag(mr, TAG.MISSING_APPROVALS);
         elem.innerHTML += `<div class="approval" style="color: ${color}">No approval</div>`;
         return;
     }
     const needed = (_b = options.requiredApprovals) !== null && _b !== void 0 ? _b : 3;
     const allResolved = approval.approved_by.length >= needed;
-    if (allResolved) {
-        elem.innerHTML += `<div class="discussion" style="color: ${colors[BADGE.DONE]}">Approvals ${approval.approved_by.length}/${needed}</div>`;
-        return;
-    }
-    addTag(mr, TAG.MISSING_APPROVALS);
     const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username);
-    if (!approvedByMe && !isMrMine(mr)) {
-        addTag(mr, TAG.NOT_APPROVED_BY_ME);
+    if (!allResolved) {
+        if (!approvedByMe && !isMrMine(mr)) {
+            addTag(mr, TAG.NOT_APPROVED_BY_ME);
+        }
+        addTag(mr, TAG.MISSING_APPROVALS);
     }
     const color = allResolved ? colors[BADGE.DONE] : ((isMrMine(mr) || approvedByMe) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS]);
     const approvers = approval.approved_by.map(u => u.user.username).join(',');
@@ -184,7 +185,7 @@ const processCI = (mr) => __awaiter(void 0, void 0, void 0, function* () {
     if (fullMR.diverged_commits_count > 0) {
         addTag(mr, TAG.NEED_REBASE);
     }
-    if (fullMR.pipeline && fullMR.pipeline.status !== 'success') {
+    if (fullMR.detailed_merge_status === "ci_must_pass" || (fullMR.pipeline && fullMR.pipeline.status !== 'success')) {
         addTag(mr, TAG.CI_UNSUCCESSFUL);
     }
 });

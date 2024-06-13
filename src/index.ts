@@ -105,9 +105,9 @@ const tagToBadgeForMe: Record<TAG, BADGE> = {
 
 // /!\ is in order
 const tagToBadgeForOthers: Record<TAG, BADGE> = {
-    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.WAIT,
     [TAG.CI_UNSUCCESSFUL]: BADGE.WAIT,
     [TAG.NOT_APPROVED_BY_ME]: BADGE.ACTIONS,
+    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.WAIT,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NEED_REBASE]: BADGE.WAIT,
 }
@@ -254,6 +254,9 @@ const processApprovals = async (elem: Element, mr: MR) => {
 
     if (!approval.approved) {
         const color = ((isMrMine(mr)) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
+        if (!isMrMine(mr)) {
+            addTag(mr, TAG.NOT_APPROVED_BY_ME)
+        }
         addTag(mr, TAG.MISSING_APPROVALS)
         elem.innerHTML += `<div class="approval" style="color: ${color}">No approval</div>`
         return
@@ -261,15 +264,14 @@ const processApprovals = async (elem: Element, mr: MR) => {
 
     const needed = options.requiredApprovals ?? 3
     const allResolved = approval.approved_by.length >= needed
-    if (allResolved) {
-        elem.innerHTML += `<div class="discussion" style="color: ${colors[BADGE.DONE]}">Approvals ${approval.approved_by.length}/${needed}</div>`
-        return
-    }
-
-    addTag(mr, TAG.MISSING_APPROVALS)
     const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username)
-    if (!approvedByMe && !isMrMine(mr)) {
-        addTag(mr, TAG.NOT_APPROVED_BY_ME)
+
+    if (!allResolved) {
+
+        if (!approvedByMe && !isMrMine(mr)) {
+            addTag(mr, TAG.NOT_APPROVED_BY_ME)
+        }
+        addTag(mr, TAG.MISSING_APPROVALS)
     }
 
 
@@ -285,7 +287,7 @@ const processCI = async (mr: MR): Promise<void> => {
         addTag(mr, TAG.NEED_REBASE)
     }
 
-    if (fullMR.pipeline && fullMR.pipeline.status !== 'success') {
+    if (fullMR.detailed_merge_status === "ci_must_pass" || (fullMR.pipeline && fullMR.pipeline.status !== 'success')) {
         addTag(mr, TAG.CI_UNSUCCESSFUL)
     }
 }

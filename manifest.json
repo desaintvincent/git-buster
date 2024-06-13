@@ -20,9 +20,6 @@
     "host_permissions": [
         "*://*/*"
     ],
-    "background": {
-        "service_worker": "service-worker.js"
-    },
     "content_scripts": [{
         "js": ["build/index.js"],
         "matches": ["<all_urls>"]
