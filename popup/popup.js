@@ -17,12 +17,13 @@ const loadOptions = async () => {
 
 }
 
-const AllOptions = ['enable', 'skipDrafts', 'baseUrl', 'username']
+const AllOptions = ['enable', 'skipDrafts', 'baseUrl', 'username', 'requiredApprovals']
 
 const saveOptions = async () => {
     const getValueFromType = (elem) => {
         switch(elem.type) {
             case 'checkbox': {return !!elem.checked; }
+            case 'number': {return parseInt(elem.value); }
             default: {return elem.value; }
         }
     }
@@ -49,21 +50,25 @@ const applyOptions = options => {
         }
     })
 }
-
+const listenElems = () => {
+    AllOptions.forEach(optionName => {
+        const elem = document.querySelector(`#${optionName}`)
+        elem.addEventListener('change', e => {
+            saveOptions()
+        })
+    })
+}
 
 document.querySelector("#button-reload").onclick = (e) => {
     e.preventDefault()
     chrome.runtime.reload();
     location.reload();
 };
-document.querySelector("#save").onclick = (e) => {
-    e.preventDefault()
-    saveOptions()
-};
 
 const init = async () => {
     const options = await loadOptions()
     applyOptions(options)
+    listenElems()
 }
 
 (async () => {

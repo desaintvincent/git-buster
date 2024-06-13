@@ -9,6 +9,7 @@ type Options = {
     username?: string;
     baseUrl?: string;
     skipDrafts?: boolean;
+    requiredApprovals?: number;
 }
 
 let options: Options
@@ -69,16 +70,67 @@ type MR = {
     "blocking_discussions_resolved": boolean
 }
 
+type Approval = {
+    "user_has_approved": boolean,
+    "user_can_approve": boolean,
+    "approved": boolean,
+    "approved_by": Array<{
+        user: User
+    }>
+}
+
 enum BADGE {
     ACTIONS = 'actions',
     WAIT = 'wait',
     DONE = 'done',
+    NEUTRAL = 'neutral'
+}
+
+enum TAG {
+    NOT_APPROVED_BY_ME = 'not_approved_by_me',
+    MISSING_APPROVALS = 'missing_approvals',
+    DISCUSSIONS_NOT_RESOLVED = 'discussions_not_resolved',
+    CI_UNSUCCESSFUL = 'ci_unsuccessful',
+    NEED_REBASE = 'need_rebase'
+}
+
+// /!\ is in order
+const tagToBadgeForMe: Record<TAG, BADGE> = {
+    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.ACTIONS,
+    [TAG.CI_UNSUCCESSFUL]: BADGE.ACTIONS,
+    [TAG.NEED_REBASE]: BADGE.ACTIONS,
+    [TAG.MISSING_APPROVALS]: BADGE.WAIT,
+    [TAG.NOT_APPROVED_BY_ME]: BADGE.NEUTRAL,
+}
+
+// /!\ is in order
+const tagToBadgeForOthers: Record<TAG, BADGE> = {
+    [TAG.DISCUSSIONS_NOT_RESOLVED]: BADGE.WAIT,
+    [TAG.CI_UNSUCCESSFUL]: BADGE.WAIT,
+    [TAG.NOT_APPROVED_BY_ME]: BADGE.ACTIONS,
+    [TAG.MISSING_APPROVALS]: BADGE.WAIT,
+    [TAG.NEED_REBASE]: BADGE.WAIT,
+}
+
+const tagsByMr: Record<string, TAG[]> = {}
+
+const addTag = (mr: MR, tag: TAG): void => {
+    if (!(mr.id in tagsByMr)) {
+        tagsByMr[mr.id] = []
+    }
+
+    tagsByMr[mr.id].push(tag)
+}
+
+const getTags = (mr: MR): TAG[] => {
+    return tagsByMr[mr.id] ?? []
 }
 
 const colors = {
     [BADGE.ACTIONS]: '#ec5941',
     [BADGE.WAIT]: '#c17d10',
-    [BADGE.DONE]: '#2da160'
+    [BADGE.DONE]: '#2da160',
+    [BADGE.NEUTRAL]: 'white'
 };
 
 const EXTENSION_NAME = 'gitlab-speculum'
@@ -91,15 +143,66 @@ const loadOptions = async (): Promise<Options> => {
 
 }
 
-async function myFetch (url: string) {
-    return fetch(`${options.baseUrl}/api/v4${url}`).then(res => res.json())
+const getBadge = (isMine: boolean, tags: TAG[]): BADGE => {
+    if (!tags.length) {
+        return BADGE.DONE
+    }
+
+    const mapping = isMine ? tagToBadgeForMe : tagToBadgeForOthers
+
+    for (const [tag, badge] of Object.entries(mapping)) {
+        if (tags.includes(tag as TAG)) {
+            return badge
+        }
+    }
+    return BADGE.NEUTRAL
+}
+
+const setBadge = (mr: MR) => {
+    const issueElem = document.getElementById(`merge_request_${mr.id}`);
+    if (!issueElem) {
+        console.error('could not find elem', {mr})
+        return;
+    }
+
+    const isMine = isMrMine(mr)
+    const tags = getTags(mr)
+    const badge = getBadge(isMine, tags)
+    const badgeColor = colors[badge]
+
+    // @ts-ignore
+    issueElem.style.borderLeft = `5px solid ${badgeColor}`;
+    // @ts-ignore
+    issueElem.style.paddingLeft = '10px';
+
+    const issueInfoElem = issueElem.querySelector('.issuable-info')
+    if (!issueInfoElem) {
+        console.error('could not find issuable-info', {mr})
+        return
+    }
+
+    if (badge === BADGE.DONE) {
+        issueInfoElem.innerHTML += `<div>
+        <div><br/></div>
+        <div style="color: ${colors[BADGE.DONE]}">Can be merged</div>
+    </div>`
+    }
+
+    issueInfoElem.innerHTML += `<div>
+        <div><br/></div>
+        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}">TAGS: ${tags.join(', ')}</div>
+    </div>`
+}
+
+const myFetch = async <T = any>(url: string): Promise<T> => {
+    return fetch(`${options.baseUrl}/api/v4${url}`).then(res => res.json() as T)
 }
 
 const isMrMine = (mr: MR) => {
     return mr.assignee?.username === options.username
 }
 
-async function getMrOfProject (projectName: string, mrIids: string[]): Promise<MR[]> {
+const getMrOfProject = async  (projectName: string, mrIids: string[]): Promise<MR[]> => {
     const project = (await myFetch(`/projects?search=${projectName}`)).shift()
 
 
@@ -107,7 +210,7 @@ async function getMrOfProject (projectName: string, mrIids: string[]): Promise<M
     return myFetch(`/projects/${project.id}/merge_requests?with_labels_details=true&with_merge_status_recheck=true&${params}`)
 }
 
-async function getAllMr(): Promise<MR[]>{
+const getAllMr = async (): Promise<MR[]> => {
     const mergeRequests = document.querySelectorAll('li.merge-request .merge-request-title-text a');
     const mrByProject = new Map()
     for (let i = 0 ; i < mergeRequests.length ; i++) {
@@ -129,28 +232,80 @@ async function getAllMr(): Promise<MR[]>{
     return mrsByProject.flat();
 }
 
-const getDiscussions = async (projectId: number, mrIId: number) => {
-    return myFetch(`/projects/${projectId}/merge_requests/${mrIId}/discussions`)
-}
-
-const processMr = async (mr: MR): Promise<void> => {
-    const discussions = await getDiscussions(mr.project_id, mr.iid)
+const processDiscussion = async (elem: Element,mr: MR): Promise<void> => {
+    const discussions = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/discussions?per_page=100`)
     const humanDiscussions = discussions.filter((d: Record<string, unknown>) => !d.individual_note)
-    const elem = document.querySelector(`#merge_request_${mr.id} .issuable-meta`)
-    if (!elem) {
-        return
-    }
+
     if (!humanDiscussions.length) {
         elem.innerHTML += `<div class="discussion">No discussion</div>`
         return
     }
     const resolved = humanDiscussions.filter((discussion: any) => !!discussion.notes[0].resolved)
     const allResolved = resolved.length >= humanDiscussions.length
+    if (!allResolved) {
+        addTag(mr, TAG.DISCUSSIONS_NOT_RESOLVED)
+    }
     const color = allResolved ? colors[BADGE.DONE] : (isMrMine(mr) ? colors[BADGE.ACTIONS] : colors[BADGE.WAIT])
     elem.innerHTML += `<div class="discussion" style="color: ${color}">Discussions ${resolved.length}/${humanDiscussions.length}</div>`
 }
 
-async function init() {
+const processApprovals = async (elem: Element, mr: MR) => {
+    const approval = await myFetch<Approval>(`/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`)
+
+    if (!approval.approved) {
+        const color = ((isMrMine(mr)) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
+        addTag(mr, TAG.MISSING_APPROVALS)
+        elem.innerHTML += `<div class="approval" style="color: ${color}">No approval</div>`
+        return
+    }
+
+    const needed = options.requiredApprovals ?? 3
+    const allResolved = approval.approved_by.length >= needed
+    if (allResolved) {
+        elem.innerHTML += `<div class="discussion" style="color: ${colors[BADGE.DONE]}">Approvals ${approval.approved_by.length}/${needed}</div>`
+        return
+    }
+
+    addTag(mr, TAG.MISSING_APPROVALS)
+    const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username)
+    if (!approvedByMe && !isMrMine(mr)) {
+        addTag(mr, TAG.NOT_APPROVED_BY_ME)
+    }
+
+
+    const color = allResolved ? colors[BADGE.DONE] : ((isMrMine(mr) || approvedByMe) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
+    const approvers = approval.approved_by.map(u => u.user.username).join(',')
+    elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${approvers})</div>`
+}
+
+const processCI = async (mr: MR): Promise<void> => {
+    const fullMR = await myFetch<any>(`/projects/${mr.project_id}/merge_requests/${mr.iid}?include_diverged_commits_count=true`)
+
+    if (fullMR.diverged_commits_count > 0) {
+        addTag(mr, TAG.NEED_REBASE)
+    }
+
+    if (fullMR.pipeline && fullMR.pipeline.status !== 'success') {
+        addTag(mr, TAG.CI_UNSUCCESSFUL)
+    }
+}
+
+
+const processMr = async (mr: MR): Promise<void> => {
+
+    const elem = document.querySelector(`#merge_request_${mr.id} .issuable-meta`)
+    if (!elem) {
+        return
+    }
+    await Promise.all([
+        processDiscussion(elem, mr),
+        processApprovals(elem, mr),
+        processCI(mr),
+    ])
+    setBadge(mr)
+}
+
+const init = async () => {
     options = await loadOptions();
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
         return
@@ -158,7 +313,6 @@ async function init() {
     const allMr = await getAllMr()
     await Promise.all(allMr.filter(mr => !options.skipDrafts || !mr.draft).map(mr => processMr(mr)))
 }
-
 
 (async () => {
     await init()
