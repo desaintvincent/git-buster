@@ -46,7 +46,7 @@ const applyOptions = options => {
         const elem = document.querySelector(`#${optionName}`)
         switch(elem.type) {
             case 'checkbox': {elem.checked = options[optionName] ?? false; break }
-            case 'number': {elem.checked = options[optionName] ?? 0; break }
+            case 'number': {elem.value = (options[optionName] ?? 0); break }
             default: {elem.value = options[optionName] ?? ''; break }
         }
     })
