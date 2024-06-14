@@ -13,7 +13,7 @@ const notif = (str) => {
 const loadOptions = async () => {
     const options = await chrome.storage.sync.get([EXTENSION_NAME])
 
-    return options[EXTENSION_NAME]
+    return options[EXTENSION_NAME] ?? {}
 
 }
 
@@ -45,8 +45,9 @@ const applyOptions = options => {
     AllOptions.forEach(optionName => {
         const elem = document.querySelector(`#${optionName}`)
         switch(elem.type) {
-            case 'checkbox': {elem.checked = options[optionName]; break }
-            default: {elem.value = options[optionName]; break }
+            case 'checkbox': {elem.checked = options[optionName] ?? false; break }
+            case 'number': {elem.checked = options[optionName] ?? 0; break }
+            default: {elem.value = options[optionName] ?? ''; break }
         }
     })
 }
