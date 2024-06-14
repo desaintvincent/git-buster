@@ -133,7 +133,7 @@ const colors = {
     [BADGE.NEUTRAL]: 'white'
 };
 
-const EXTENSION_NAME = 'gitlab-speculum'
+const EXTENSION_NAME = 'git-buster'
 
 const loadOptions = async (): Promise<Options> => {
     // @ts-ignore

@@ -62,7 +62,7 @@ const colors = {
     [BADGE.DONE]: '#2da160',
     [BADGE.NEUTRAL]: 'white'
 };
-const EXTENSION_NAME = 'gitlab-speculum';
+const EXTENSION_NAME = 'git-buster';
 const loadOptions = () => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
     const options = yield chrome.storage.sync.get([EXTENSION_NAME]);

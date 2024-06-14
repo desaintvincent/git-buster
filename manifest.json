@@ -1,7 +1,7 @@
 {
     // Comments are accepted in the manifest, even though it is JSON.
     "manifest_version": 3,
-    "name": "Gitlab speculum",
+    "name": "Git buster",
     "description": "More infos on gitlab mr list",
     "version": "0.0.1",
     "icons": {
@@ -11,7 +11,7 @@
     },
     "options_page": "settings/settings.html",
     "action": {
-        "default_title": "Gitlab speculum",
+        "default_title": "Git buster",
         "default_popup": "popup/popup.html"
     },
     "permissions": [

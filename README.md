@@ -1,4 +1,4 @@
-# Gitlab speculum
+# Git buster
 
 ## Badge
 ### IF the MR is mine

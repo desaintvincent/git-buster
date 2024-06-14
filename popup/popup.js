@@ -1,4 +1,4 @@
-const EXTENSION_NAME = 'gitlab-speculum'
+const EXTENSION_NAME = 'git-buster'
 
 const notif = (str) => {
     const savedContainer = document.querySelector('#notif');
