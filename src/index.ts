@@ -279,7 +279,15 @@ const processApprovals = async (elem: Element, mr: MR) => {
 
     const color = allResolved ? colors[BADGE.DONE] : ((isMrMine(mr) || approvedByMe) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
     const approvers = approval.approved_by.map(u => u.user.username).join(',')
-    elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${approvers})</div>`
+
+    console.log('====> approval.approved_by', JSON.stringify(approval.approved_by, null, 2))
+
+
+    const allAvatars = approval.approved_by.map(u => `<span class="author-link has-tooltip" title="Approved by ${u.user.name}" data-container="body" data-qa-selector="assignee_link" data-original-title="Approved by ${u.user.name}" aria-describedby="gl-tooltip5">
+<img width="16" class="avatar avatar-inline s16 js-lazy-loaded" alt="" src="${u.user.avatar_url}" loading="lazy" data-qa_selector="js_lazy_loaded_content">
+</span>`).join('')
+
+    elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${allAvatars})</div>`
 }
 
 const processCI = async (mr: MR): Promise<void> => {
