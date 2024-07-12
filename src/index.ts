@@ -10,6 +10,7 @@ type Options = {
     baseUrl?: string;
     skipDrafts?: boolean;
     requiredApprovals?: number;
+    facultativeApprovers: string[];
 }
 
 let options: Options
@@ -91,7 +92,8 @@ enum TAG {
     MISSING_APPROVALS = 'missing_approvals',
     DISCUSSIONS_NOT_RESOLVED = 'discussions_not_resolved',
     CI_UNSUCCESSFUL = 'ci_unsuccessful',
-    NEED_REBASE = 'need_rebase'
+    NEED_REBASE = 'need_rebase',
+    CAN_BE_MERGED = 'can_be_merged'
 }
 
 // /!\ is in order
@@ -101,6 +103,7 @@ const tagToBadgeForMe: Record<TAG, BADGE> = {
     [TAG.NEED_REBASE]: BADGE.ACTIONS,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NOT_APPROVED_BY_ME]: BADGE.NEUTRAL,
+    [TAG.CAN_BE_MERGED]: BADGE.DONE,
 }
 
 // /!\ is in order
@@ -110,6 +113,7 @@ const tagToBadgeForOthers: Record<TAG, BADGE> = {
     [TAG.NOT_APPROVED_BY_ME]: BADGE.ACTIONS,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NEED_REBASE]: BADGE.WAIT,
+    [TAG.CAN_BE_MERGED]: BADGE.DONE,
 }
 
 const tagsByMr: Record<string, TAG[]> = {}
@@ -139,7 +143,13 @@ const loadOptions = async (): Promise<Options> => {
     // @ts-ignore
     const options = await chrome.storage.sync.get([EXTENSION_NAME])
 
-    return options[EXTENSION_NAME]
+    const scoppedOptions = options[EXTENSION_NAME]
+
+    return {
+        ...scoppedOptions,
+        facultativeApprovers: scoppedOptions.facultativeApprovers.split(','),
+
+    }
 
 }
 
@@ -156,6 +166,17 @@ const getBadge = (isMine: boolean, tags: TAG[]): BADGE => {
         }
     }
     return BADGE.NEUTRAL
+}
+
+const capitalizeFirstLetter = (str: string): string => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+const displayBadge = (tag: TAG, isMine: boolean): string => {
+
+    const badge = getBadge(isMine, [tag])
+    const badgeColor = colors[badge]
+    return `<span style="border: 1px solid black; padding: 0 8px; border-radius: 50px; background-color: ${badgeColor}; color: black">${capitalizeFirstLetter(tag).replace(/_/g, ' ')}</span>`
 }
 
 const setBadge = (mr: MR) => {
@@ -184,7 +205,7 @@ const setBadge = (mr: MR) => {
     if (badge === BADGE.DONE) {
         issueInfoElem.innerHTML += `<div>
         <div><br/></div>
-        <div style="color: ${colors[BADGE.DONE]}">Can be merged</div>
+        <div>${displayBadge(TAG.CAN_BE_MERGED, isMine)}</div>
     </div>`
 
         return
@@ -192,7 +213,7 @@ const setBadge = (mr: MR) => {
 
     issueInfoElem.innerHTML += `<div>
         <div><br/></div>
-        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}">TAGS: ${tags.join(', ')}</div>
+        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}" style="display: flex; gap: 5px">${tags.map(tag => displayBadge(tag, isMine)).join('')}</div>
     </div>`
 }
 
@@ -265,7 +286,9 @@ const processApprovals = async (elem: Element, mr: MR) => {
     }
 
     const needed = options.requiredApprovals ?? 3
-    const allResolved = approval.approved_by.length >= needed
+
+    const requiredResolvers = approval.approved_by.filter(u => !options.facultativeApprovers.includes(u.user.username))
+    const allResolved = requiredResolvers.length >= needed
     const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username)
 
     if (!allResolved) {

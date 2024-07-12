@@ -28,6 +28,7 @@ var TAG;
     TAG["DISCUSSIONS_NOT_RESOLVED"] = "discussions_not_resolved";
     TAG["CI_UNSUCCESSFUL"] = "ci_unsuccessful";
     TAG["NEED_REBASE"] = "need_rebase";
+    TAG["CAN_BE_MERGED"] = "can_be_merged";
 })(TAG || (TAG = {}));
 // /!\ is in order
 const tagToBadgeForMe = {
@@ -36,6 +37,7 @@ const tagToBadgeForMe = {
     [TAG.NEED_REBASE]: BADGE.ACTIONS,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NOT_APPROVED_BY_ME]: BADGE.NEUTRAL,
+    [TAG.CAN_BE_MERGED]: BADGE.DONE,
 };
 // /!\ is in order
 const tagToBadgeForOthers = {
@@ -44,6 +46,7 @@ const tagToBadgeForOthers = {
     [TAG.NOT_APPROVED_BY_ME]: BADGE.ACTIONS,
     [TAG.MISSING_APPROVALS]: BADGE.WAIT,
     [TAG.NEED_REBASE]: BADGE.WAIT,
+    [TAG.CAN_BE_MERGED]: BADGE.DONE,
 };
 const tagsByMr = {};
 const addTag = (mr, tag) => {
@@ -66,7 +69,8 @@ const EXTENSION_NAME = 'git-buster';
 const loadOptions = () => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
     const options = yield chrome.storage.sync.get([EXTENSION_NAME]);
-    return options[EXTENSION_NAME];
+    const scoppedOptions = options[EXTENSION_NAME];
+    return Object.assign(Object.assign({}, scoppedOptions), { facultativeApprovers: scoppedOptions.facultativeApprovers.split(',') });
 });
 const getBadge = (isMine, tags) => {
     if (!tags.length) {
@@ -79,6 +83,14 @@ const getBadge = (isMine, tags) => {
         }
     }
     return BADGE.NEUTRAL;
+};
+const capitalizeFirstLetter = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+};
+const displayBadge = (tag, isMine) => {
+    const badge = getBadge(isMine, [tag]);
+    const badgeColor = colors[badge];
+    return `<span style="border: 1px solid black; padding: 0 8px; border-radius: 50px; background-color: ${badgeColor}; color: black">${capitalizeFirstLetter(tag).replace(/_/g, ' ')}</span>`;
 };
 const setBadge = (mr) => {
     const issueElem = document.getElementById(`merge_request_${mr.id}`);
@@ -102,13 +114,13 @@ const setBadge = (mr) => {
     if (badge === BADGE.DONE) {
         issueInfoElem.innerHTML += `<div>
         <div><br/></div>
-        <div style="color: ${colors[BADGE.DONE]}">Can be merged</div>
+        <div>${displayBadge(TAG.CAN_BE_MERGED, isMine)}</div>
     </div>`;
         return;
     }
     issueInfoElem.innerHTML += `<div>
         <div><br/></div>
-        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}">TAGS: ${tags.join(', ')}</div>
+        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}" style="display: flex; gap: 5px">${tags.map(tag => displayBadge(tag, isMine)).join('')}</div>
     </div>`;
 };
 const myFetch = (url) => __awaiter(void 0, void 0, void 0, function* () {
@@ -169,7 +181,8 @@ const processApprovals = (elem, mr) => __awaiter(void 0, void 0, void 0, functio
         return;
     }
     const needed = (_b = options.requiredApprovals) !== null && _b !== void 0 ? _b : 3;
-    const allResolved = approval.approved_by.length >= needed;
+    const requiredResolvers = approval.approved_by.filter(u => !options.facultativeApprovers.includes(u.user.username));
+    const allResolved = requiredResolvers.length >= needed;
     const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username);
     if (!allResolved) {
         if (!approvedByMe && !isMrMine(mr)) {
