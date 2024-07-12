@@ -62,6 +62,37 @@ const colors = {
     [BADGE.DONE]: '#2da160',
     [BADGE.NEUTRAL]: 'white'
 };
+const tagColors = {
+    [TAG.NEED_REBASE]: '#ff9900',
+    [TAG.CI_UNSUCCESSFUL]: '#ec5941',
+    [TAG.DISCUSSIONS_NOT_RESOLVED]: '#5941ec',
+    [TAG.MISSING_APPROVALS]: '#2a9efe',
+    [TAG.NOT_APPROVED_BY_ME]: '#a12d60',
+};
+const getContrastColor = (bgColor) => {
+    // Remove the '#' character if present
+    bgColor = bgColor.replace('#', '');
+    // Convert the hexadecimal color code to RGB values
+    const r = parseInt(bgColor.substr(0, 2), 16);
+    const g = parseInt(bgColor.substr(2, 2), 16);
+    const b = parseInt(bgColor.substr(4, 2), 16);
+    // Calculate the perceived brightness using the relative luminance formula
+    const brightness = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    // Set the font color based on the brightness threshold
+    return brightness > 0.5 ? '#000000' : '#ffffff';
+};
+const tagStyle = (tag) => {
+    var _a, _b;
+    return [
+        `background-color: ${(_a = tagColors[tag]) !== null && _a !== void 0 ? _a : colors[BADGE.DONE]}`,
+        `color: ${getContrastColor((_b = tagColors[tag]) !== null && _b !== void 0 ? _b : colors[BADGE.DONE])}`,
+        `border-radius: 100px`,
+        `padding: 4px 10px`,
+        `margin: 2px 4px`,
+        `font-size: 0.8em`,
+        ``
+    ].join(';');
+};
 const EXTENSION_NAME = 'git-buster';
 const loadOptions = () => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore
@@ -99,17 +130,23 @@ const setBadge = (mr) => {
         console.error('could not find issuable-info', { mr });
         return;
     }
+    const tagBadge = (tag) => `<span style="${tagStyle(tag)}">${tag.replaceAll('_', ' ')}</span>`;
     if (badge === BADGE.DONE) {
-        issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div style="color: ${colors[BADGE.DONE]}">Can be merged</div>
-    </div>`;
+        issueInfoElem.innerHTML += `
+        <div>
+            <div>
+                <br/>
+            </div>
+            ${tagBadge('can merge')}
+        </div>`;
         return;
     }
-    issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div class="has-tooltip" title="is Mine: ${isMrMine(mr) ? 'true' : 'false'}">TAGS: ${tags.join(', ')}</div>
-    </div>`;
+    issueInfoElem.innerHTML += `
+        <div>
+            <div><br/></div>
+            <div>${tags.map(tagBadge).join('')}</div>
+        </div>`;
+    console.log(tags);
 };
 const myFetch = (url) => __awaiter(void 0, void 0, void 0, function* () {
     return fetch(`${options.baseUrl}/api/v4${url}`).then(res => res.json());
