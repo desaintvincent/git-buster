@@ -17,11 +17,14 @@ button {
 
 .input-container {
     display: flex;
+    flex-direction: row;
     align-items: center;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
 }
 
 .input-container label {
-    margin-right: 12px;
+    flex: 4;
 }
 
 .input-container input {

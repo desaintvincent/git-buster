@@ -11,6 +11,7 @@ type Options = {
     skipDrafts?: boolean;
     requiredApprovals?: number;
     facultativeApprovers: string[];
+    ignoreAfterMonth?: number;
 }
 
 let options: Options
@@ -68,7 +69,8 @@ type MR = {
         "completed_count": number
     },
     "has_conflicts": boolean,
-    "blocking_discussions_resolved": boolean
+    "blocking_discussions_resolved": boolean,
+    "updated_at": string
 }
 
 type Approval = {
@@ -147,8 +149,7 @@ const loadOptions = async (): Promise<Options> => {
 
     return {
         ...scoppedOptions,
-        facultativeApprovers: scoppedOptions.facultativeApprovers.split(','),
-
+        facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(','),
     }
 
 }
@@ -336,13 +337,26 @@ const processMr = async (mr: MR): Promise<void> => {
     setBadge(mr)
 }
 
+const isOld = (mr: MR, ignoreAfterMonth?: number): boolean => {
+    if (!ignoreAfterMonth || ignoreAfterMonth < 1) {
+        return false
+    }
+
+    const now = new Date();
+    const targetDate = new Date(mr.updated_at)
+
+    const monthDiff = Math.abs((now.getFullYear() - targetDate.getFullYear()) * 12 + (now.getMonth() - targetDate.getMonth()));
+
+    return monthDiff > ignoreAfterMonth
+}
+
 const init = async () => {
     options = await loadOptions();
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
         return
     }
     const allMr = await getAllMr()
-    await Promise.all(allMr.filter(mr => !options.skipDrafts || !mr.draft).map(mr => processMr(mr)))
+    await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
 }
 
 (async () => {

@@ -17,7 +17,7 @@ const loadOptions = async () => {
 
 }
 
-const AllOptions = ['enable', 'skipDrafts', 'baseUrl', 'username', 'requiredApprovals', 'facultativeApprovers']
+const AllOptions = ['enable', 'skipDrafts', 'baseUrl', 'username', 'requiredApprovals', 'facultativeApprovers', 'ignoreAfterMonth']
 
 const saveOptions = async () => {
     const getValueFromType = (elem) => {

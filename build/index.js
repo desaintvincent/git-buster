@@ -67,10 +67,11 @@ const colors = {
 };
 const EXTENSION_NAME = 'git-buster';
 const loadOptions = () => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     // @ts-ignore
     const options = yield chrome.storage.sync.get([EXTENSION_NAME]);
     const scoppedOptions = options[EXTENSION_NAME];
-    return Object.assign(Object.assign({}, scoppedOptions), { facultativeApprovers: scoppedOptions.facultativeApprovers.split(',') });
+    return Object.assign(Object.assign({}, scoppedOptions), { facultativeApprovers: ((_a = scoppedOptions.facultativeApprovers) !== null && _a !== void 0 ? _a : '').split(',') });
 });
 const getBadge = (isMine, tags) => {
     if (!tags.length) {
@@ -136,7 +137,7 @@ const getMrOfProject = (projectName, mrIids) => __awaiter(void 0, void 0, void 0
     return myFetch(`/projects/${project.id}/merge_requests?with_labels_details=true&with_merge_status_recheck=true&${params}`);
 });
 const getAllMr = () => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _b;
     const mergeRequests = document.querySelectorAll('li.merge-request .merge-request-title-text a');
     const mrByProject = new Map();
     for (let i = 0; i < mergeRequests.length; i++) {
@@ -145,7 +146,7 @@ const getAllMr = () => __awaiter(void 0, void 0, void 0, function* () {
             continue;
         }
         const [project, , , mrIid] = href.split('/').splice(-4);
-        const iidList = (_a = mrByProject.get(project)) !== null && _a !== void 0 ? _a : [];
+        const iidList = (_b = mrByProject.get(project)) !== null && _b !== void 0 ? _b : [];
         iidList.push(mrIid);
         mrByProject.set(project, iidList);
     }
@@ -169,7 +170,7 @@ const processDiscussion = (elem, mr) => __awaiter(void 0, void 0, void 0, functi
     elem.innerHTML += `<div class="discussion" style="color: ${color}">Discussions ${resolved.length}/${humanDiscussions.length}</div>`;
 });
 const processApprovals = (elem, mr) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
+    var _c;
     const approval = yield myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`);
     if (!approval.approved) {
         const color = ((isMrMine(mr)) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS]);
@@ -180,7 +181,7 @@ const processApprovals = (elem, mr) => __awaiter(void 0, void 0, void 0, functio
         elem.innerHTML += `<div class="approval" style="color: ${color}">No approval</div>`;
         return;
     }
-    const needed = (_b = options.requiredApprovals) !== null && _b !== void 0 ? _b : 3;
+    const needed = (_c = options.requiredApprovals) !== null && _c !== void 0 ? _c : 3;
     const requiredResolvers = approval.approved_by.filter(u => !options.facultativeApprovers.includes(u.user.username));
     const allResolved = requiredResolvers.length >= needed;
     const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username);
@@ -217,13 +218,22 @@ const processMr = (mr) => __awaiter(void 0, void 0, void 0, function* () {
     ]);
     setBadge(mr);
 });
+const isOld = (mr, ignoreAfterMonth) => {
+    if (!ignoreAfterMonth || ignoreAfterMonth < 1) {
+        return false;
+    }
+    const now = new Date();
+    const targetDate = new Date(mr.updated_at);
+    const monthDiff = Math.abs((now.getFullYear() - targetDate.getFullYear()) * 12 + (now.getMonth() - targetDate.getMonth()));
+    return monthDiff > ignoreAfterMonth;
+};
 const init = () => __awaiter(void 0, void 0, void 0, function* () {
     options = yield loadOptions();
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
         return;
     }
     const allMr = yield getAllMr();
-    yield Promise.all(allMr.filter(mr => !options.skipDrafts || !mr.draft).map(mr => processMr(mr)));
+    yield Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)));
 });
 (() => __awaiter(void 0, void 0, void 0, function* () {
     yield init();

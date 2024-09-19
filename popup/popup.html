@@ -10,9 +10,9 @@
     Git buster
 </h1>
 <div class="row">
-    <div>
-        <input type="checkbox" id="enable" name="enable" />
+    <div class="input-container">
         <label for="enable">Enable</label>
+        <input type="checkbox" id="enable" name="enable" />
     </div>
     <div class="input-container">
         <label for="baseUrl">BaseUrl</label>
@@ -22,9 +22,13 @@
         <label for="username">Username</label>
         <input type="text" id="username" name="username" />
     </div>
-    <div>
-        <input type="checkbox" id="skipDrafts" name="skipDrafts" />
+    <div class="input-container">
         <label for="skipDrafts">Skip drafts</label>
+        <input type="checkbox" id="skipDrafts" name="skipDrafts" />
+    </div>
+    <div class="input-container">
+        <label for="ignoreAfterMonth">Ignore after x month old</label>
+        <input type="number" id="ignoreAfterMonth" name="ignoreAfterMonth" />
     </div>
     <div class="input-container">
         <label for="requiredApprovals">Required approvals</label>
