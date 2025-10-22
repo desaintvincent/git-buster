@@ -141,26 +141,58 @@ const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvals: nu
   return { approvals, reviewers }
 }
 
-const useReviewMeta = (baseUrl: string | undefined, mrs: MR[]) => {
+// Cache for review meta keyed by MR id, invalidated when updated_at changes
+const reviewMetaCache: Record<number, { updated_at: string; approvals: number; reviewers: string[] }> = {}
+const REVIEW_META_BATCH_SIZE = 5 // throttle concurrency per batch
+
+const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshToken: number) => {
   const [approvalsByMr, setApprovalsByMr] = useState<Record<number, number>>({})
   const [reviewersByMr, setReviewersByMr] = useState<Record<number, string[]>>({})
   const [loading, setLoading] = useState<boolean>(false)
   useEffect(() => {
     let cancelled = false
     if (!baseUrl || !mrs.length) { setApprovalsByMr({}); setReviewersByMr({}); setLoading(false); return }
-    setLoading(true)
-    Promise.all(mrs.map(mr => fetchReviewMeta(baseUrl, mr).then(meta => ({ id: mr.id, meta })) ))
-      .then(results => {
-        if (cancelled) return
-        const approvals: Record<number, number> = {}
-        const reviewers: Record<number, string[]> = {}
-        results.forEach(r => { approvals[r.id] = r.meta.approvals; reviewers[r.id] = r.meta.reviewers })
-        setApprovalsByMr(approvals)
-        setReviewersByMr(reviewers)
+
+    const toFetch = mrs.filter(mr => {
+      const cached = reviewMetaCache[mr.id]
+      return !cached || cached.updated_at !== mr.updated_at
+    })
+
+    const populateFromCache = () => {
+      const approvals: Record<number, number> = {}
+      const reviewers: Record<number, string[]> = {}
+      mrs.forEach(mr => {
+        const c = reviewMetaCache[mr.id]
+        approvals[mr.id] = c.approvals
+        reviewers[mr.id] = c.reviewers
       })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      setApprovalsByMr(approvals)
+      setReviewersByMr(reviewers)
+    }
+
+    if (!toFetch.length) { populateFromCache(); setLoading(false); return }
+
+    setLoading(true)
+    const run = async () => {
+      for (let i = 0; i < toFetch.length && !cancelled; i += REVIEW_META_BATCH_SIZE) {
+        const slice = toFetch.slice(i, i + REVIEW_META_BATCH_SIZE)
+        try {
+          const results = await Promise.all(slice.map(mr => fetchReviewMeta(baseUrl!, mr).then(meta => ({ id: mr.id, updated_at: mr.updated_at, meta }))))
+          if (cancelled) return
+          for (const r of results) {
+            reviewMetaCache[r.id] = { updated_at: r.updated_at, approvals: r.meta.approvals, reviewers: r.meta.reviewers }
+          }
+          // Incremental populate to show partial data early
+          populateFromCache()
+        } catch {
+          // ignore errors per slice; continue with next slice
+        }
+      }
+      if (!cancelled) { setLoading(false) }
+    }
+    run()
     return () => { cancelled = true }
-  }, [baseUrl, mrs])
+  }, [baseUrl, mrs, refreshToken])
   return { approvalsByMr, reviewersByMr, loading }
 }
 
@@ -225,6 +257,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
   const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'others'>(() => loadFilters().authorFilter)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null) // non-persistent author filter
+  const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, authorFilter }) }, [hideDrafts, onlyHotfixes, authorFilter])
   // Clear ephemeral author filter if switching to 'mine'
   useEffect(() => { if (authorFilter === 'mine' && selectedAuthor) { setSelectedAuthor(null) } }, [authorFilter, selectedAuthor])
@@ -244,7 +277,13 @@ const OverviewPage = ({ options }: OverviewProps) => {
     : fullyFilteredAfterPersistent
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
-  const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, fullyFiltered)
+  const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, fullyFiltered, reviewMetaRefreshToken)
+
+  const handleRefreshReviewMeta = () => {
+    // Clear cache only for currently visible MRs so other cached data remains
+    fullyFiltered.forEach(mr => { delete reviewMetaCache[mr.id] })
+    setReviewMetaRefreshToken(t => t + 1)
+  }
 
   return (
     <div style="min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px">
@@ -264,7 +303,14 @@ const OverviewPage = ({ options }: OverviewProps) => {
                 style="flex:1;min-width:260px;padding:6px 10px;border:1px solid #bbb;border-radius:6px;font-size:13px"
             />
             <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
-        </div>
+            <button
+              type="button"
+              onClick={handleRefreshReviewMeta}
+              disabled={reviewMetaLoading || !fullyFiltered.length}
+              title="Force refetch approvals & reviewers for visible MRs (clears cache for them)"
+              style="padding:6px 10px;border:1px solid #bbb;border-radius:6px;cursor:${reviewMetaLoading || !fullyFiltered.length ? 'not-allowed' : 'pointer'};font-size:12px"
+            >Refresh review meta</button>
+          </div>
       <div style="margin-top:20px">
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}

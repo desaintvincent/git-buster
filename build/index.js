@@ -594,7 +594,9 @@
     const reviewers = Object.values(reviewerMap).map((u4) => u4.name || u4.username);
     return { approvals, reviewers };
   };
-  var useReviewMeta = (baseUrl, mrs) => {
+  var reviewMetaCache = {};
+  var REVIEW_META_BATCH_SIZE = 5;
+  var useReviewMeta = (baseUrl, mrs, refreshToken) => {
     const [approvalsByMr, setApprovalsByMr] = d2({});
     const [reviewersByMr, setReviewersByMr] = d2({});
     const [loading, setLoading] = d2(false);
@@ -606,24 +608,49 @@
         setLoading(false);
         return;
       }
-      setLoading(true);
-      Promise.all(mrs.map((mr) => fetchReviewMeta(baseUrl, mr).then((meta) => ({ id: mr.id, meta })))).then((results) => {
-        if (cancelled) return;
+      const toFetch = mrs.filter((mr) => {
+        const cached = reviewMetaCache[mr.id];
+        return !cached || cached.updated_at !== mr.updated_at;
+      });
+      const populateFromCache = () => {
         const approvals = {};
         const reviewers = {};
-        results.forEach((r3) => {
-          approvals[r3.id] = r3.meta.approvals;
-          reviewers[r3.id] = r3.meta.reviewers;
+        mrs.forEach((mr) => {
+          const c3 = reviewMetaCache[mr.id];
+          approvals[mr.id] = c3.approvals;
+          reviewers[mr.id] = c3.reviewers;
         });
         setApprovalsByMr(approvals);
         setReviewersByMr(reviewers);
-      }).finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+      };
+      if (!toFetch.length) {
+        populateFromCache();
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const run = async () => {
+        for (let i4 = 0; i4 < toFetch.length && !cancelled; i4 += REVIEW_META_BATCH_SIZE) {
+          const slice = toFetch.slice(i4, i4 + REVIEW_META_BATCH_SIZE);
+          try {
+            const results = await Promise.all(slice.map((mr) => fetchReviewMeta(baseUrl, mr).then((meta) => ({ id: mr.id, updated_at: mr.updated_at, meta }))));
+            if (cancelled) return;
+            for (const r3 of results) {
+              reviewMetaCache[r3.id] = { updated_at: r3.updated_at, approvals: r3.meta.approvals, reviewers: r3.meta.reviewers };
+            }
+            populateFromCache();
+          } catch {
+          }
+        }
+        if (!cancelled) {
+          setLoading(false);
+        }
+      };
+      run();
       return () => {
         cancelled = true;
       };
-    }, [baseUrl, mrs]);
+    }, [baseUrl, mrs, refreshToken]);
     return { approvalsByMr, reviewersByMr, loading };
   };
   var Table = ({ mrs, filter, setFilter, approvalsByMr, reviewersByMr }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
@@ -688,6 +715,7 @@
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
     const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
+    const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
     }, [hideDrafts, onlyHotfixes, authorFilter]);
@@ -704,7 +732,13 @@
     const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? fullyFilteredAfterPersistent.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : fullyFilteredAfterPersistent;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length;
-    const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, fullyFiltered);
+    const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, fullyFiltered, reviewMetaRefreshToken);
+    const handleRefreshReviewMeta = () => {
+      fullyFiltered.forEach((mr) => {
+        delete reviewMetaCache[mr.id];
+      });
+      setReviewMetaRefreshToken((t3) => t3 + 1);
+    };
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
       /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
       /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
@@ -735,7 +769,18 @@
           displayedHotfixes,
           "/",
           totalHotfixes
-        ] })
+        ] }),
+        /* @__PURE__ */ u3(
+          "button",
+          {
+            type: "button",
+            onClick: handleRefreshReviewMeta,
+            disabled: reviewMetaLoading || !fullyFiltered.length,
+            title: "Force refetch approvals & reviewers for visible MRs (clears cache for them)",
+            style: "padding:6px 10px;border:1px solid #bbb;border-radius:6px;cursor:${reviewMetaLoading || !fullyFiltered.length ? 'not-allowed' : 'pointer'};font-size:12px",
+            children: "Refresh review meta"
+          }
+        )
       ] }),
       /* @__PURE__ */ u3("div", { style: "margin-top:20px", children: [
         loading && /* @__PURE__ */ u3("div", { style: "opacity:.7", children: "Loading merge requests\u2026" }),
