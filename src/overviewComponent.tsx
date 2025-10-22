@@ -4,6 +4,7 @@ import { Options, MR } from './types'
 // Add Approval import
 import type { Approval } from './types'
 import type { User } from './types'
+import { UserAvatar } from './UserAvatar'
 
 interface OverviewProps { options: Options }
 
@@ -104,27 +105,22 @@ const formatUpdatedAt = (iso: string): string => {
 }
 
 // New fetch function for approvals count AND reviewers (comments)
-const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvals: number; reviewers: string[] }> => {
-  // approvals
+const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvalsUsers: User[]; reviewersUsers: User[] }> => {
   const approvalsUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`
-  let approvals: number = 0
-  let approvedUsers: User[] = []
+  let approvalsUsers: User[] = []
   try {
     const res = await fetch(approvalsUrl)
     if (res.ok) {
       const data: Approval = await res.json()
-      approvals = Array.isArray(data.approved_by) ? data.approved_by.length : 0
-      approvedUsers = Array.isArray(data.approved_by) ? data.approved_by.map(a => a.user) : []
+      approvalsUsers = Array.isArray(data.approved_by) ? data.approved_by.map(a => a.user).filter(u => !!u?.username) : []
     }
   } catch { /* ignore */ }
-  // notes (comments)
   const notesUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/notes?per_page=100`
   let commentUsers: User[] = []
   try {
     const res = await fetch(notesUrl)
     if (res.ok) {
       const notes = await res.json()
-      // Each note has author and possibly system flag
       commentUsers = notes
         .filter((n: any) => !n.system && n.author?.username)
         .map((n: any) => n.author as User)
@@ -132,46 +128,41 @@ const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvals: nu
   } catch { /* ignore */ }
   const authorUsername = mr.author?.username
   const reviewerMap: Record<string, User> = {}
-  for (const u of approvedUsers.concat(commentUsers)) {
-    if (!u?.username) continue
-    if (u.username === authorUsername) continue // exclude author
+  for (const u of approvalsUsers.concat(commentUsers)) {
+    if (!u?.username || u.username === authorUsername) continue
     reviewerMap[u.username] = u
   }
-  const reviewers = Object.values(reviewerMap).map(u => u.name || u.username)
-  return { approvals, reviewers }
+  const reviewersUsers = Object.values(reviewerMap)
+  return { approvalsUsers, reviewersUsers }
 }
 
 // Cache for review meta keyed by MR id, invalidated when updated_at changes
-const reviewMetaCache: Record<number, { updated_at: string; approvals: number; reviewers: string[] }> = {}
+const reviewMetaCache: Record<number, { updated_at: string; approvalsUsers: User[]; reviewersUsers: User[] }> = {}
 const REVIEW_META_BATCH_SIZE = 5 // throttle concurrency per batch
 
 const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshToken: number) => {
-  const [approvalsByMr, setApprovalsByMr] = useState<Record<number, number>>({})
-  const [reviewersByMr, setReviewersByMr] = useState<Record<number, string[]>>({})
+  const [approvalsUsersByMr, setApprovalsUsersByMr] = useState<Record<number, User[]>>({})
+  const [reviewersUsersByMr, setReviewersUsersByMr] = useState<Record<number, User[]>>({})
   const [loading, setLoading] = useState<boolean>(false)
   useEffect(() => {
     let cancelled = false
-    if (!baseUrl || !mrs.length) { setApprovalsByMr({}); setReviewersByMr({}); setLoading(false); return }
-
+    if (!baseUrl || !mrs.length) { setApprovalsUsersByMr({}); setReviewersUsersByMr({}); setLoading(false); return }
     const toFetch = mrs.filter(mr => {
       const cached = reviewMetaCache[mr.id]
       return !cached || cached.updated_at !== mr.updated_at
     })
-
     const populateFromCache = () => {
-      const approvals: Record<number, number> = {}
-      const reviewers: Record<number, string[]> = {}
+      const approvals: Record<number, User[]> = {}
+      const reviewers: Record<number, User[]> = {}
       mrs.forEach(mr => {
         const c = reviewMetaCache[mr.id]
-        approvals[mr.id] = c.approvals
-        reviewers[mr.id] = c.reviewers
+        approvals[mr.id] = c.approvalsUsers
+        reviewers[mr.id] = c.reviewersUsers
       })
-      setApprovalsByMr(approvals)
-      setReviewersByMr(reviewers)
+      setApprovalsUsersByMr(approvals)
+      setReviewersUsersByMr(reviewers)
     }
-
     if (!toFetch.length) { populateFromCache(); setLoading(false); return }
-
     setLoading(true)
     const run = async () => {
       for (let i = 0; i < toFetch.length && !cancelled; i += REVIEW_META_BATCH_SIZE) {
@@ -180,23 +171,20 @@ const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshToken: num
           const results = await Promise.all(slice.map(mr => fetchReviewMeta(baseUrl!, mr).then(meta => ({ id: mr.id, updated_at: mr.updated_at, meta }))))
           if (cancelled) return
           for (const r of results) {
-            reviewMetaCache[r.id] = { updated_at: r.updated_at, approvals: r.meta.approvals, reviewers: r.meta.reviewers }
+            reviewMetaCache[r.id] = { updated_at: r.updated_at, approvalsUsers: r.meta.approvalsUsers, reviewersUsers: r.meta.reviewersUsers }
           }
-          // Incremental populate to show partial data early
           populateFromCache()
-        } catch {
-          // ignore errors per slice; continue with next slice
-        }
+        } catch { /* ignore batch errors */ }
       }
       if (!cancelled) { setLoading(false) }
     }
     run()
     return () => { cancelled = true }
   }, [baseUrl, mrs, refreshToken])
-  return { approvalsByMr, reviewersByMr, loading }
+  return { approvalsUsersByMr, reviewersUsersByMr, loading }
 }
 
-const Table = ({ mrs, filter, setFilter, approvalsByMr, reviewersByMr }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void; approvalsByMr: Record<number, number>; reviewersByMr: Record<number, string[]> }) => (
+const Table = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]> }) => (
   <table style="border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px">
     <thead>
     <tr>
@@ -219,29 +207,33 @@ const Table = ({ mrs, filter, setFilter, approvalsByMr, reviewersByMr }: { mrs: 
         const newFilter = filter.trim().length ? `${filter.trim()} ${ticket}` : ticket
         setFilter(newFilter)
       }
-      const approvalsCount = approvalsByMr[mr.id]
-      const reviewerNames = reviewersByMr[mr.id] || []
-      const reviewersDisplay = reviewerNames.length ? reviewerNames.length : '–'
-      const reviewersTooltip = reviewerNames.length ? reviewerNames.join(', ') : 'No reviewers (approval or comment)'
+      const approvalsUsers = approvalsUsersByMr[mr.id] || []
+      const reviewersUsers = reviewersUsersByMr[mr.id] || []
       return (
         <tr key={mr.id}>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
             <div style="display:flex;align-items:flex-start;gap:6px">
-                <button
-                    type="button"
-                    onClick={addTicket}
-                    disabled={disabled}
-                    title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`}
-                    style="border:1px solid #bbb;background:${disabled ? '#f5f5f5' : '#fff'};color:${disabled ? '#999' : '#222'};padding:2px 5px;border-radius:4px;font-size:11px;cursor:${disabled ? 'not-allowed' : 'pointer'};line-height:1;display:inline-flex;align-items:center;gap:2px"
-                >🔍</button>
+              <button
+                type="button"
+                onClick={addTicket}
+                disabled={disabled}
+                title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`}
+                style="border:1px solid #bbb;background:${disabled ? '#f5f5f5' : '#fff'};color:${disabled ? '#999' : '#222'};padding:2px 5px;border-radius:4px;font-size:11px;cursor:${disabled ? 'not-allowed' : 'pointer'};line-height:1;display:inline-flex;align-items:center;gap:2px"
+              >🔍</button>
               <a href={mr.web_url} target="_blank" style="text-decoration:none;color:#1f78d1;flex:1">{mr.title}</a>
             </div>
             <div style="opacity:.6;font-size:11px">{mr.source_branch} → {mr.target_branch}</div>
           </td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.projectPath}</td>
-          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.author?.name}</td>
-          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px" title="Number of approvals">{approvalsCount ?? '–'}</td>
-          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px" title={reviewersTooltip}>{reviewersDisplay}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
+            {mr.author && <UserAvatar user={mr.author} />}
+          </td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px">
+            {approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} style="display:inline-flex;align-items:center">{approvalsUsers.map((u,i) => <UserAvatar user={u} overlap={i>0} />)}</span> : '–'}
+          </td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px">
+            {reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} style="display:inline-flex;align-items:center">{reviewersUsers.map((u,i) => <UserAvatar user={u} overlap={i>0} />)}</span> : '–'}
+          </td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px">{formatUpdatedAt(mr.updated_at)}</td>
         </tr>
       )
@@ -277,7 +269,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
     : fullyFilteredAfterPersistent
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
-  const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, fullyFiltered, reviewMetaRefreshToken)
+  const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, fullyFiltered, reviewMetaRefreshToken)
 
   const handleRefreshReviewMeta = () => {
     // Clear cache only for currently visible MRs so other cached data remains
@@ -315,7 +307,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}
         {!loading && !error && !fullyFiltered.length && <div style="opacity:.6">No opened merge requests found.</div>}
-        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} approvalsByMr={approvalsByMr} reviewersByMr={reviewersByMr} />}
+        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} />}
         {reviewMetaLoading && !!fullyFiltered.length && <div style="margin-top:6px;font-size:11px;opacity:.6">Loading approvals & reviewers…</div>}
       </div>
     </div>
