@@ -505,6 +505,31 @@
     }, [baseUrl]);
     return { mrs, loading, error };
   };
+  var isDraftMr = (mr) => {
+    const title = mr.title.toLowerCase();
+    return !!mr.draft || !!mr.work_in_progress || title.startsWith("draft:") || title.startsWith("wip:");
+  };
+  var LS_FILTER_KEY = "gb_persistent_filters";
+  var loadFilters = () => {
+    try {
+      const raw = localStorage.getItem(LS_FILTER_KEY);
+      if (!raw) return { hideDrafts: false };
+      const parsed = JSON.parse(raw);
+      return { hideDrafts: !!parsed.hideDrafts };
+    } catch {
+      return { hideDrafts: false };
+    }
+  };
+  var saveFilters = (f4) => {
+    try {
+      localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f4));
+    } catch {
+    }
+  };
+  var PersistantFilterBar = ({ hideDrafts, setHideDrafts }) => /* @__PURE__ */ u3("div", { style: "margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px", children: /* @__PURE__ */ u3("label", { style: "display:flex;align-items:center;gap:6px;cursor:pointer", children: [
+    /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
+    /* @__PURE__ */ u3("span", { children: "Hide draft MRs" })
+  ] }) });
   var Table = ({ mrs }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
     /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
@@ -529,7 +554,12 @@
   var OverviewPage = ({ options: options2 }) => {
     const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl);
     const [filter, setFilter] = d2("");
-    const filtered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
+    const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
+    y2(() => {
+      saveFilters({ hideDrafts });
+    }, [hideDrafts]);
+    const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
+    const fullyFiltered = hideDrafts ? titleFiltered.filter((mr) => !isDraftMr(mr)) : titleFiltered;
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
       /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
       /* @__PURE__ */ u3("p", { style: "max-width:780px", children: "Open merge requests for configured projects fetched directly from GitLab API." }),
@@ -544,20 +574,21 @@
           }
         ),
         /* @__PURE__ */ u3("div", { style: "font-size:12px;opacity:.7", children: [
-          filtered.length,
+          fullyFiltered.length,
           "/",
           mrs.length,
           " displayed"
         ] })
       ] }),
+      /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts }),
       /* @__PURE__ */ u3("div", { style: "margin-top:20px", children: [
         loading && /* @__PURE__ */ u3("div", { style: "opacity:.7", children: "Loading merge requests\u2026" }),
         error && !loading && /* @__PURE__ */ u3("div", { style: "color:#ec5941", children: [
           "Failed to load: ",
           error
         ] }),
-        !loading && !error && !mrs.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
-        !!filtered.length && /* @__PURE__ */ u3(Table, { mrs: filtered })
+        !loading && !error && !fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
+        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered })
       ] }),
       /* @__PURE__ */ u3("div", { style: "margin-top:32px;font-size:12px;opacity:.7", children: [
         "Base URL: ",
