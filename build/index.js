@@ -574,17 +574,24 @@
       const approvalsUsers = approvalsUsersByMr[mr.id] || [];
       const reviewersUsers = reviewersUsersByMr[mr.id] || [];
       return /* @__PURE__ */ u3("tr", { children: [
-        /* @__PURE__ */ u3("td", { className: "gb-td", children: [
-          /* @__PURE__ */ u3("div", { className: "gb-title-cell", children: [
-            /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
-            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-link", children: mr.title })
+        /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
+          /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
+            /* @__PURE__ */ u3("span", { className: "gb-mr-iid", children: [
+              "!",
+              mr.iid
+            ] }),
+            isDraftMr(mr) && /* @__PURE__ */ u3("span", { className: "gb-mr-draft", children: "Draft:" }),
+            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
           ] }),
-          /* @__PURE__ */ u3("div", { className: "gb-sub", children: [
-            mr.source_branch,
-            " \u2192 ",
-            mr.target_branch
+          /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
+            /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
+            /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
+              mr.source_branch,
+              " \u2192 ",
+              mr.target_branch
+            ] })
           ] })
-        ] }),
+        ] }) }),
         /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
         /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
         /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
@@ -735,7 +742,7 @@
 .gb-container { min-height:calc(100vh - 60px); padding:24px; color:var(--gl-text-color,#222); font-family:var(--gl-font-family,system-ui,sans-serif); max-width:1100px; }
 .gb-container h1 { margin-top:0; }
 .gb-filter-bar { margin-top:10px; padding:8px 12px; border:1px solid #ccc; border-radius:6px; display:flex; gap:18px; align-items:center; font-size:12px; flex-wrap:wrap; }
-.gb-filter-item { display:flex; align-items:center; gap:6px; cursor:pointer; }
+.gb-filter-item { display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom: 0; }
 .gb-filter-row { margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .gb-input { flex:1; min-width:260px; padding:6px 10px; border:1px solid #bbb; border-radius:6px; font-size:13px; }
 .gb-small-text { font-size:12px; opacity:.7; }
@@ -778,6 +785,14 @@
 .gb-project-filter-label, .gb-author-filter-label { font-weight:600; font-size:12px; }
 .gb-project-filter { display:flex; flex-direction:column; gap:4px; }
 .gb-mt6 { margin-top:6px; }
+.gb-mr-title-block { display:flex; flex-direction:column; gap:2px; }
+.gb-mr-title-line { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.gb-mr-link { text-decoration:none; color:var(--gl-text-color, #222); font-weight:600; font-size:14px; line-height:20px; }
+.gb-mr-link:hover { text-decoration:underline; color:var(--gl-text-color, #222); }
+.gb-mr-draft { background:none; padding:0; border-radius:0; color:#c17d10; font-weight:600; font-size:12px; }
+.gb-mr-meta-line { display:flex; align-items:center; gap:8px; font-size:11px; color:#6b6b6b; }
+.gb-mr-branches { font-family:monospace; font-size:11px; }
+.gb-mr-iid { font-size:12px; font-weight:500; color:#6b6b6b; }
 `;
 
   // src/overviewComponent.tsx

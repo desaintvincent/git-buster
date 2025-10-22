@@ -1,7 +1,7 @@
 import type { MR } from '../types'
 import type { User } from '../types'
 import { UserAvatar } from '../UserAvatar'
-import { extractJiraTicket, formatUpdatedAt } from '../utils/mrUtils'
+import { extractJiraTicket, formatUpdatedAt, isDraftMr } from '../utils/mrUtils'
 
 export interface MRWithProject extends MR { projectPath: string }
 interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]> }
@@ -33,11 +33,17 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
         return (
           <tr key={mr.id}>
             <td className="gb-td">
-              <div className="gb-title-cell">
-                <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                <a href={mr.web_url} target="_blank" className="gb-link">{mr.title}</a>
+              <div className="gb-mr-title-block">
+                <div className="gb-mr-title-line">
+                  <span className="gb-mr-iid">!{mr.iid}</span>
+                  {isDraftMr(mr) && <span className="gb-mr-draft">Draft:</span>}
+                  <a href={mr.web_url} target="_blank" className="gb-mr-link">{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
+                </div>
+                <div className="gb-mr-meta-line">
+                  <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
+                  <span className="gb-mr-branches">{mr.source_branch} → {mr.target_branch}</span>
+                </div>
               </div>
-              <div className="gb-sub">{mr.source_branch} → {mr.target_branch}</div>
             </td>
             <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
             <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
