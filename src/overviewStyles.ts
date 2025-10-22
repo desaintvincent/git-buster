@@ -10,6 +10,7 @@ export const OVERVIEW_CSS = `
 .gb-btn { padding:6px 10px; border:1px solid #bbb; border-radius:6px; cursor:pointer; font-size:12px; line-height:1; }
 .gb-btn[disabled] { cursor:not-allowed; opacity:.5; }
 .gb-ephemeral-wrapper { margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; }
+.gb-filter-bar .gb-ephemeral-wrapper { margin-top:0; }
 .gb-ephemeral-inner { display:flex; flex-direction:column; gap:4px; min-width:240px; }
 .gb-ephemeral-row { display:flex; gap:6px; align-items:center; }
 .gb-ephemeral-input { flex:1; padding:6px 8px; border:1px solid #bbb; border-radius:6px; font-size:12px; }

@@ -2,8 +2,7 @@ import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { Options } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
-import { NonPersistentProjectFilter } from './components/NonPersistentProjectFilter'
-import { NonPersistentAuthorFilter } from './components/NonPersistentAuthorFilter'
+import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
 import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
 import { useReviewMeta } from './hooks/useReviewMeta'
@@ -69,8 +68,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
     <div className="gb-container">
       <h1>Git Buster Overview</h1>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} authorFilter={authorFilter} setAuthorFilter={setAuthorFilter} username={options.username} />
-      <NonPersistentProjectFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} />
-      <NonPersistentAuthorFilter authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={authorFilter === 'mine'} />
+      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={authorFilter === 'mine'} />
       <div className="gb-filter-row">
         <input
           value={filter}

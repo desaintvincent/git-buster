@@ -518,6 +518,14 @@
     ] }) }) }) });
   };
 
+  // src/components/NonPersistantFilter.tsx
+  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled }) => {
+    return /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+      /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
+      /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled })
+    ] });
+  };
+
   // src/UserAvatar.tsx
   var UserAvatar = ({ user, overlap = false }) => {
     const tooltip = `${user.username} \u2014 ${user.name}`;
@@ -734,6 +742,7 @@
 .gb-btn { padding:6px 10px; border:1px solid #bbb; border-radius:6px; cursor:pointer; font-size:12px; line-height:1; }
 .gb-btn[disabled] { cursor:not-allowed; opacity:.5; }
 .gb-ephemeral-wrapper { margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12px; }
+.gb-filter-bar .gb-ephemeral-wrapper { margin-top:0; }
 .gb-ephemeral-inner { display:flex; flex-direction:column; gap:4px; min-width:240px; }
 .gb-ephemeral-row { display:flex; gap:6px; align-items:center; }
 .gb-ephemeral-input { flex:1; padding:6px 8px; border:1px solid #bbb; border-radius:6px; font-size:12px; }
@@ -827,8 +836,7 @@
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
       /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
-      /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects: projectNames, selectedProject, setSelectedProject }),
-      /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
+      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3(
           "input",
