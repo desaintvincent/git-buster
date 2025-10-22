@@ -561,53 +561,78 @@
     const pad = (n2) => String(n2).padStart(2, "0");
     return `${d3.getFullYear()}-${pad(d3.getMonth() + 1)}-${pad(d3.getDate())} ${pad(d3.getHours())}:${pad(d3.getMinutes())}`;
   };
-  var fetchApprovalCount = async (baseUrl, mr) => {
-    const url = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`;
+  var fetchReviewMeta = async (baseUrl, mr) => {
+    const approvalsUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`;
+    let approvals = 0;
+    let approvedUsers = [];
     try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        return 0;
+      const res = await fetch(approvalsUrl);
+      if (res.ok) {
+        const data = await res.json();
+        approvals = Array.isArray(data.approved_by) ? data.approved_by.length : 0;
+        approvedUsers = Array.isArray(data.approved_by) ? data.approved_by.map((a3) => a3.user) : [];
       }
-      const data = await res.json();
-      return Array.isArray(data.approved_by) ? data.approved_by.length : 0;
     } catch {
-      return 0;
     }
+    const notesUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/notes?per_page=100`;
+    let commentUsers = [];
+    try {
+      const res = await fetch(notesUrl);
+      if (res.ok) {
+        const notes = await res.json();
+        commentUsers = notes.filter((n2) => !n2.system && n2.author?.username).map((n2) => n2.author);
+      }
+    } catch {
+    }
+    const authorUsername = mr.author?.username;
+    const reviewerMap = {};
+    for (const u4 of approvedUsers.concat(commentUsers)) {
+      if (!u4?.username) continue;
+      if (u4.username === authorUsername) continue;
+      reviewerMap[u4.username] = u4;
+    }
+    const reviewers = Object.values(reviewerMap).map((u4) => u4.name || u4.username);
+    return { approvals, reviewers };
   };
-  var useApprovals = (baseUrl, mrs) => {
+  var useReviewMeta = (baseUrl, mrs) => {
     const [approvalsByMr, setApprovalsByMr] = d2({});
+    const [reviewersByMr, setReviewersByMr] = d2({});
     const [loading, setLoading] = d2(false);
     y2(() => {
       let cancelled = false;
       if (!baseUrl || !mrs.length) {
         setApprovalsByMr({});
+        setReviewersByMr({});
         setLoading(false);
         return;
       }
       setLoading(true);
-      Promise.all(mrs.map((mr) => fetchApprovalCount(baseUrl, mr).then((count) => ({ id: mr.id, count })))).then((results) => {
-        if (!cancelled) {
-          const map = {};
-          results.forEach((r3) => map[r3.id] = r3.count);
-          setApprovalsByMr(map);
-        }
+      Promise.all(mrs.map((mr) => fetchReviewMeta(baseUrl, mr).then((meta) => ({ id: mr.id, meta })))).then((results) => {
+        if (cancelled) return;
+        const approvals = {};
+        const reviewers = {};
+        results.forEach((r3) => {
+          approvals[r3.id] = r3.meta.approvals;
+          reviewers[r3.id] = r3.meta.reviewers;
+        });
+        setApprovalsByMr(approvals);
+        setReviewersByMr(reviewers);
       }).finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       });
       return () => {
         cancelled = true;
       };
     }, [baseUrl, mrs]);
-    return { approvalsByMr, loading };
+    return { approvalsByMr, reviewersByMr, loading };
   };
-  var Table = ({ mrs, filter, setFilter, approvalsByMr }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
+  var Table = ({ mrs, filter, setFilter, approvalsByMr, reviewersByMr }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
     /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Project" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Author" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap", children: "Approvals" }),
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap", children: "Reviewers" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap", children: "Updated" })
     ] }) }),
     /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
@@ -623,6 +648,9 @@
         setFilter(newFilter);
       };
       const approvalsCount = approvalsByMr[mr.id];
+      const reviewerNames = reviewersByMr[mr.id] || [];
+      const reviewersDisplay = reviewerNames.length ? reviewerNames.length : "\u2013";
+      const reviewersTooltip = reviewerNames.length ? reviewerNames.join(", ") : "No reviewers (approval or comment)";
       return /* @__PURE__ */ u3("tr", { children: [
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
           /* @__PURE__ */ u3("div", { style: "display:flex;align-items:flex-start;gap:6px", children: [
@@ -648,6 +676,7 @@
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.projectPath }),
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px", title: "Number of approvals", children: approvalsCount ?? "\u2013" }),
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px", title: reviewersTooltip, children: reviewersDisplay }),
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px", children: formatUpdatedAt(mr.updated_at) })
       ] }, mr.id);
     }) })
@@ -675,7 +704,7 @@
     const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? fullyFilteredAfterPersistent.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : fullyFilteredAfterPersistent;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length;
-    const { approvalsByMr, loading: approvalsLoading } = useApprovals(options2.baseUrl, fullyFiltered);
+    const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, fullyFiltered);
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
       /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
       /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
@@ -715,8 +744,8 @@
           error
         ] }),
         !loading && !error && !fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
-        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered, filter, setFilter, approvalsByMr }),
-        approvalsLoading && !!fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "margin-top:6px;font-size:11px;opacity:.6", children: "Loading approvals\u2026" })
+        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered, filter, setFilter, approvalsByMr, reviewersByMr }),
+        reviewMetaLoading && !!fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "margin-top:6px;font-size:11px;opacity:.6", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });
   };

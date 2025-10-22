@@ -39,6 +39,7 @@ Clicking the button toggles a synthetic overview page that replaces the main con
 - Persistent local filters: "Hide draft MRs", "Only hotfix MRs", and Author scope (All / Mine / Others)
 - Ephemeral author filter (autocomplete): ad-hoc text/datalist filter by username or full name; disabled when persistent Author scope is set to Mine; not stored across reloads.
 - Per-MR magnifying glass button: if the MR title contains a JIRA-like ticket (e.g. ABC-123), clicking adds it to the title filter without duplication; disabled if no ticket pattern is found.
+- Per-MR columns include Approvals (count of approved_by) and Reviewers (unique non-author users who either approved or left a non-system comment; tooltip lists names).
 
 Hotfix definition (overview page filter):
 - Targets `main` or `master` branch OR

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { Options, MR } from './types'
 // Add Approval import
 import type { Approval } from './types'
+import type { User } from './types'
 
 interface OverviewProps { options: Options }
 
@@ -102,33 +103,68 @@ const formatUpdatedAt = (iso: string): string => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// New fetch function for approvals count
-const fetchApprovalCount = async (baseUrl: string, mr: MR): Promise<number> => {
-  const url = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`
+// New fetch function for approvals count AND reviewers (comments)
+const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvals: number; reviewers: string[] }> => {
+  // approvals
+  const approvalsUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`
+  let approvals: number = 0
+  let approvedUsers: User[] = []
   try {
-    const res = await fetch(url)
-    if (!res.ok) { return 0 }
-    const data: Approval = await res.json()
-    return Array.isArray(data.approved_by) ? data.approved_by.length : 0
-  } catch { return 0 }
+    const res = await fetch(approvalsUrl)
+    if (res.ok) {
+      const data: Approval = await res.json()
+      approvals = Array.isArray(data.approved_by) ? data.approved_by.length : 0
+      approvedUsers = Array.isArray(data.approved_by) ? data.approved_by.map(a => a.user) : []
+    }
+  } catch { /* ignore */ }
+  // notes (comments)
+  const notesUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/notes?per_page=100`
+  let commentUsers: User[] = []
+  try {
+    const res = await fetch(notesUrl)
+    if (res.ok) {
+      const notes = await res.json()
+      // Each note has author and possibly system flag
+      commentUsers = notes
+        .filter((n: any) => !n.system && n.author?.username)
+        .map((n: any) => n.author as User)
+    }
+  } catch { /* ignore */ }
+  const authorUsername = mr.author?.username
+  const reviewerMap: Record<string, User> = {}
+  for (const u of approvedUsers.concat(commentUsers)) {
+    if (!u?.username) continue
+    if (u.username === authorUsername) continue // exclude author
+    reviewerMap[u.username] = u
+  }
+  const reviewers = Object.values(reviewerMap).map(u => u.name || u.username)
+  return { approvals, reviewers }
 }
 
-const useApprovals = (baseUrl: string | undefined, mrs: MR[]) => {
+const useReviewMeta = (baseUrl: string | undefined, mrs: MR[]) => {
   const [approvalsByMr, setApprovalsByMr] = useState<Record<number, number>>({})
+  const [reviewersByMr, setReviewersByMr] = useState<Record<number, string[]>>({})
   const [loading, setLoading] = useState<boolean>(false)
   useEffect(() => {
     let cancelled = false
-    if (!baseUrl || !mrs.length) { setApprovalsByMr({}); setLoading(false); return }
+    if (!baseUrl || !mrs.length) { setApprovalsByMr({}); setReviewersByMr({}); setLoading(false); return }
     setLoading(true)
-    Promise.all(mrs.map(mr => fetchApprovalCount(baseUrl, mr).then(count => ({ id: mr.id, count })) ))
-      .then(results => { if (!cancelled) { const map: Record<number, number> = {}; results.forEach(r => map[r.id] = r.count); setApprovalsByMr(map) } })
-      .finally(() => { if (!cancelled) { setLoading(false) } })
+    Promise.all(mrs.map(mr => fetchReviewMeta(baseUrl, mr).then(meta => ({ id: mr.id, meta })) ))
+      .then(results => {
+        if (cancelled) return
+        const approvals: Record<number, number> = {}
+        const reviewers: Record<number, string[]> = {}
+        results.forEach(r => { approvals[r.id] = r.meta.approvals; reviewers[r.id] = r.meta.reviewers })
+        setApprovalsByMr(approvals)
+        setReviewersByMr(reviewers)
+      })
+      .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [baseUrl, mrs])
-  return { approvalsByMr, loading }
+  return { approvalsByMr, reviewersByMr, loading }
 }
 
-const Table = ({ mrs, filter, setFilter, approvalsByMr }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void; approvalsByMr: Record<number, number> }) => (
+const Table = ({ mrs, filter, setFilter, approvalsByMr, reviewersByMr }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void; approvalsByMr: Record<number, number>; reviewersByMr: Record<number, string[]> }) => (
   <table style="border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px">
     <thead>
     <tr>
@@ -136,6 +172,7 @@ const Table = ({ mrs, filter, setFilter, approvalsByMr }: { mrs: MRWithProject[]
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Project</th>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Author</th>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap">Approvals</th>
+      <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap">Reviewers</th>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap">Updated</th>
     </tr>
     </thead>
@@ -151,6 +188,9 @@ const Table = ({ mrs, filter, setFilter, approvalsByMr }: { mrs: MRWithProject[]
         setFilter(newFilter)
       }
       const approvalsCount = approvalsByMr[mr.id]
+      const reviewerNames = reviewersByMr[mr.id] || []
+      const reviewersDisplay = reviewerNames.length ? reviewerNames.length : '–'
+      const reviewersTooltip = reviewerNames.length ? reviewerNames.join(', ') : 'No reviewers (approval or comment)'
       return (
         <tr key={mr.id}>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
@@ -169,6 +209,7 @@ const Table = ({ mrs, filter, setFilter, approvalsByMr }: { mrs: MRWithProject[]
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.projectPath}</td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.author?.name}</td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px" title="Number of approvals">{approvalsCount ?? '–'}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px" title={reviewersTooltip}>{reviewersDisplay}</td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px">{formatUpdatedAt(mr.updated_at)}</td>
         </tr>
       )
@@ -203,7 +244,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
     : fullyFilteredAfterPersistent
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
-  const { approvalsByMr, loading: approvalsLoading } = useApprovals(options.baseUrl, fullyFiltered)
+  const { approvalsByMr, reviewersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, fullyFiltered)
 
   return (
     <div style="min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px">
@@ -228,8 +269,8 @@ const OverviewPage = ({ options }: OverviewProps) => {
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}
         {!loading && !error && !fullyFiltered.length && <div style="opacity:.6">No opened merge requests found.</div>}
-        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} approvalsByMr={approvalsByMr} />}
-        {approvalsLoading && !!fullyFiltered.length && <div style="margin-top:6px;font-size:11px;opacity:.6">Loading approvals…</div>}
+        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} approvalsByMr={approvalsByMr} reviewersByMr={reviewersByMr} />}
+        {reviewMetaLoading && !!fullyFiltered.length && <div style="margin-top:6px;font-size:11px;opacity:.6">Loading approvals & reviewers…</div>}
       </div>
     </div>
   )
