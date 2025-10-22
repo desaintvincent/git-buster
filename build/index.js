@@ -552,26 +552,56 @@
       ] })
     ] })
   ] });
-  var Table = ({ mrs }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
+  var extractJiraTicket = (title) => {
+    const match = title.toUpperCase().match(/([A-Z][A-Z0-9]+-\d+)/);
+    return match ? match[1] : null;
+  };
+  var Table = ({ mrs, filter, setFilter }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
     /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Project" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Author" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Updated" })
     ] }) }),
-    /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => /* @__PURE__ */ u3("tr", { children: [
-      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
-        /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", style: "text-decoration:none;color:#1f78d1", children: mr.title }),
-        /* @__PURE__ */ u3("div", { style: "opacity:.6;font-size:11px", children: [
-          mr.source_branch,
-          " \u2192 ",
-          mr.target_branch
-        ] })
-      ] }),
-      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.projectPath }),
-      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
-      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: new Date(mr.updated_at).toLocaleString() })
-    ] }, mr.id)) })
+    /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
+      const ticket = extractJiraTicket(mr.title);
+      const disabled = !ticket;
+      const addTicket = () => {
+        if (!ticket) return;
+        const parts = filter.trim().split(/\s+/).filter(Boolean);
+        if (parts.includes(ticket)) {
+          return;
+        }
+        const newFilter = filter.trim().length ? `${filter.trim()} ${ticket}` : ticket;
+        setFilter(newFilter);
+      };
+      return /* @__PURE__ */ u3("tr", { children: [
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
+          /* @__PURE__ */ u3("div", { style: "display:flex;align-items:flex-start;gap:6px", children: [
+            /* @__PURE__ */ u3(
+              "button",
+              {
+                type: "button",
+                onClick: addTicket,
+                disabled,
+                title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`,
+                style: "border:1px solid #bbb;background:${disabled ? '#f5f5f5' : '#fff'};color:${disabled ? '#999' : '#222'};padding:2px 5px;border-radius:4px;font-size:11px;cursor:${disabled ? 'not-allowed' : 'pointer'};line-height:1;display:inline-flex;align-items:center;gap:2px",
+                children: "\u{1F50D}"
+              }
+            ),
+            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", style: "text-decoration:none;color:#1f78d1;flex:1", children: mr.title })
+          ] }),
+          /* @__PURE__ */ u3("div", { style: "opacity:.6;font-size:11px", children: [
+            mr.source_branch,
+            " \u2192 ",
+            mr.target_branch
+          ] })
+        ] }),
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.projectPath }),
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: new Date(mr.updated_at).toLocaleString() })
+      ] }, mr.id);
+    }) })
   ] });
   var OverviewPage = ({ options: options2 }) => {
     const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl);
@@ -579,18 +609,35 @@
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
     const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
+    const [selectedAuthor, setSelectedAuthor] = d2(null);
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
     }, [hideDrafts, onlyHotfixes, authorFilter]);
+    y2(() => {
+      if (authorFilter === "mine" && selectedAuthor) {
+        setSelectedAuthor(null);
+      }
+    }, [authorFilter, selectedAuthor]);
+    const authors = Array.from(new Map(mrs.map((mr) => [mr.author?.username || "", { username: mr.author?.username || "", name: mr.author?.name || "" }])).values()).filter((a3) => a3.username).sort((a3, b) => a3.username.localeCompare(b.username));
     const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
     const draftFiltered = hideDrafts ? titleFiltered.filter((mr) => !isDraftMr(mr)) : titleFiltered;
     const fullyFilteredBase = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
-    const fullyFiltered = authorFilter === "mine" ? fullyFilteredBase.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? fullyFilteredBase.filter((mr) => mr.author?.username !== options2.username) : fullyFilteredBase;
+    const fullyFilteredAfterPersistent = authorFilter === "mine" ? fullyFilteredBase.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? fullyFilteredBase.filter((mr) => mr.author?.username !== options2.username) : fullyFilteredBase;
+    const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? fullyFilteredAfterPersistent.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : fullyFilteredAfterPersistent;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length;
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
       /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
-      /* @__PURE__ */ u3("p", { style: "max-width:780px", children: "Open merge requests for configured projects fetched directly from GitLab API." }),
+      /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
+      /* @__PURE__ */ u3(
+        NonPersistentAuthorFilter,
+        {
+          authors,
+          selectedAuthor,
+          setSelectedAuthor,
+          disabled: authorFilter === "mine"
+        }
+      ),
       /* @__PURE__ */ u3("div", { style: "margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap", children: [
         /* @__PURE__ */ u3(
           "input",
@@ -611,7 +658,6 @@
           totalHotfixes
         ] })
       ] }),
-      /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
       /* @__PURE__ */ u3("div", { style: "margin-top:20px", children: [
         loading && /* @__PURE__ */ u3("div", { style: "opacity:.7", children: "Loading merge requests\u2026" }),
         error && !loading && /* @__PURE__ */ u3("div", { style: "color:#ec5941", children: [
@@ -619,13 +665,43 @@
           error
         ] }),
         !loading && !error && !fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
-        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered })
-      ] }),
-      /* @__PURE__ */ u3("div", { style: "margin-top:32px;font-size:12px;opacity:.7", children: [
-        "Base URL: ",
-        options2.baseUrl
+        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered, filter, setFilter })
       ] })
     ] });
+  };
+  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled }) => {
+    return /* @__PURE__ */ u3("div", { style: "margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px", children: /* @__PURE__ */ u3("div", { style: "display:flex;flex-direction:column;gap:4px;min-width:240px", children: [
+      /* @__PURE__ */ u3("label", { style: "font-weight:600", children: "Ephemeral author filter" }),
+      /* @__PURE__ */ u3("div", { style: "display:flex;gap:6px;align-items:center", children: [
+        /* @__PURE__ */ u3(
+          "input",
+          {
+            list: "gb-authors-list",
+            disabled,
+            value: selectedAuthor ?? "",
+            onInput: (e3) => {
+              const v3 = e3.target.value.trim();
+              setSelectedAuthor(v3 ? v3 : null);
+            },
+            placeholder: disabled ? "Disabled (Mine)" : "Type to filter by author...",
+            style: "flex:1;padding:6px 8px;border:1px solid #bbb;border-radius:6px;font-size:12px"
+          }
+        ),
+        /* @__PURE__ */ u3(
+          "button",
+          {
+            type: "button",
+            disabled: disabled || !selectedAuthor,
+            onClick: () => setSelectedAuthor(null),
+            style: "padding:6px 10px;border:1px solid #bbb;border-radius:6px;cursor:pointer;font-size:12px",
+            title: "Clear author filter",
+            children: "Clear"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ u3("datalist", { id: "gb-authors-list", children: authors.map((a3) => /* @__PURE__ */ u3("option", { value: a3.username, label: a3.name })) }),
+      /* @__PURE__ */ u3("div", { style: "opacity:.6;font-size:11px", children: "Not persisted. Filters after persistent author scope. Matches username or full name." })
+    ] }) });
   };
   var mountOverview = (container, options2) => {
     G(/* @__PURE__ */ u3(OverviewPage, { options: options2 }), container);

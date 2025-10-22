@@ -89,7 +89,12 @@ const PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyH
   </div>
 )
 
-const Table = ({ mrs }: { mrs: MRWithProject[] }) => (
+const extractJiraTicket = (title: string): string | null => {
+  const match = title.toUpperCase().match(/([A-Z][A-Z0-9]+-\d+)/)
+  return match ? match[1] : null
+}
+
+const Table = ({ mrs, filter, setFilter }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void }) => (
   <table style="border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px">
     <thead>
     <tr>
@@ -100,17 +105,38 @@ const Table = ({ mrs }: { mrs: MRWithProject[] }) => (
     </tr>
     </thead>
     <tbody>
-    {mrs.map(mr => (
-      <tr key={mr.id}>
-        <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
-          <a href={mr.web_url} target="_blank" style="text-decoration:none;color:#1f78d1">{mr.title}</a>
-          <div style="opacity:.6;font-size:11px">{mr.source_branch} → {mr.target_branch}</div>
-        </td>
-        <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.projectPath}</td>
-        <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.author?.name}</td>
-        <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{new Date(mr.updated_at).toLocaleString()}</td>
-      </tr>
-    ))}
+    {mrs.map(mr => {
+      const ticket = extractJiraTicket(mr.title)
+      const disabled = !ticket
+      const addTicket = () => {
+        if (!ticket) return
+        const parts = filter.trim().split(/\s+/).filter(Boolean)
+        if (parts.includes(ticket)) { return } // avoid duplicate
+        const newFilter = filter.trim().length ? `${filter.trim()} ${ticket}` : ticket
+        setFilter(newFilter)
+      }
+      return (
+        <tr key={mr.id}>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
+            <div style="display:flex;align-items:flex-start;gap:6px">
+                <button
+                    type="button"
+                    onClick={addTicket}
+                    disabled={disabled}
+                    title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`}
+                    style="border:1px solid #bbb;background:${disabled ? '#f5f5f5' : '#fff'};color:${disabled ? '#999' : '#222'};padding:2px 5px;border-radius:4px;font-size:11px;cursor:${disabled ? 'not-allowed' : 'pointer'};line-height:1;display:inline-flex;align-items:center;gap:2px"
+                >🔍</button>
+              <a href={mr.web_url} target="_blank" style="text-decoration:none;color:#1f78d1;flex:1">{mr.title}</a>
+
+            </div>
+            <div style="opacity:.6;font-size:11px">{mr.source_branch} → {mr.target_branch}</div>
+          </td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.projectPath}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.author?.name}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{new Date(mr.updated_at).toLocaleString()}</td>
+        </tr>
+      )
+    })}
     </tbody>
   </table>
 )
@@ -121,39 +147,89 @@ const OverviewPage = ({ options }: OverviewProps) => {
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
   const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'others'>(() => loadFilters().authorFilter)
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null) // non-persistent author filter
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, authorFilter }) }, [hideDrafts, onlyHotfixes, authorFilter])
+  // Clear ephemeral author filter if switching to 'mine'
+  useEffect(() => { if (authorFilter === 'mine' && selectedAuthor) { setSelectedAuthor(null) } }, [authorFilter, selectedAuthor])
+  const authors = Array.from(new Map(mrs.map(mr => [mr.author?.username || '', { username: mr.author?.username || '', name: mr.author?.name || '' }])).values())
+    .filter(a => a.username) // remove empty
+    .sort((a, b) => a.username.localeCompare(b.username))
   const titleFiltered = filter.trim() ? mrs.filter(mr => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs
   const draftFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
   const fullyFilteredBase = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
-  const fullyFiltered = authorFilter === 'mine'
+  const fullyFilteredAfterPersistent = authorFilter === 'mine'
     ? fullyFilteredBase.filter(mr => mr.author?.username === options.username)
     : authorFilter === 'others'
       ? fullyFilteredBase.filter(mr => mr.author?.username !== options.username)
       : fullyFilteredBase
+  const fullyFiltered = selectedAuthor && authorFilter !== 'mine'
+    ? fullyFilteredAfterPersistent.filter(mr => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor)
+    : fullyFilteredAfterPersistent
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
 
   return (
     <div style="min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px">
       <h1 style="margin-top:0;">Git Buster Overview</h1>
-      <p style="max-width:780px">Open merge requests for configured projects fetched directly from GitLab API.</p>
-      <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <input
-          value={filter}
-          onInput={e => setFilter((e.target as HTMLInputElement).value)}
-          placeholder="Filter MRs by title..."
-          style="flex:1;min-width:260px;padding:6px 10px;border:1px solid #bbb;border-radius:6px;font-size:13px"
-        />
-        <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
-      </div>
       <PersistantFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} authorFilter={authorFilter} setAuthorFilter={setAuthorFilter} username={options.username} />
+      <NonPersistentAuthorFilter
+        authors={authors}
+        selectedAuthor={selectedAuthor}
+        setSelectedAuthor={setSelectedAuthor}
+        disabled={authorFilter === 'mine'}
+      />
+        <div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <input
+                value={filter}
+                onInput={e => setFilter((e.target as HTMLInputElement).value)}
+                placeholder="Filter MRs by title..."
+                style="flex:1;min-width:260px;padding:6px 10px;border:1px solid #bbb;border-radius:6px;font-size:13px"
+            />
+            <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
+        </div>
       <div style="margin-top:20px">
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}
         {!loading && !error && !fullyFiltered.length && <div style="opacity:.6">No opened merge requests found.</div>}
-        {!!fullyFiltered.length && <Table mrs={fullyFiltered} />}
+        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} />}
       </div>
-      <div style="margin-top:32px;font-size:12px;opacity:.7">Base URL: {options.baseUrl}</div>
+    </div>
+  )
+}
+
+// Ephemeral author filter component
+const NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled }: { authors: Array<{ username: string; name: string }>; selectedAuthor: string | null; setSelectedAuthor: (v: string | null) => void; disabled: boolean }) => {
+  return (
+    <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px">
+      <div style="display:flex;flex-direction:column;gap:4px;min-width:240px">
+        <label style="font-weight:600">Ephemeral author filter</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input
+            list="gb-authors-list"
+            disabled={disabled}
+            value={selectedAuthor ?? ''}
+            onInput={e => {
+              const v = (e.target as HTMLInputElement).value.trim()
+              setSelectedAuthor(v ? v : null)
+            }}
+            placeholder={disabled ? 'Disabled (Mine)' : 'Type to filter by author...'}
+            style="flex:1;padding:6px 8px;border:1px solid #bbb;border-radius:6px;font-size:12px"
+          />
+          <button
+            type="button"
+            disabled={disabled || !selectedAuthor}
+            onClick={() => setSelectedAuthor(null)}
+            style="padding:6px 10px;border:1px solid #bbb;border-radius:6px;cursor:pointer;font-size:12px"
+            title="Clear author filter"
+          >Clear</button>
+        </div>
+        <datalist id="gb-authors-list">
+          {authors.map(a => (
+            <option value={a.username} label={a.name} />
+          ))}
+        </datalist>
+        <div style="opacity:.6;font-size:11px">Not persisted. Filters after persistent author scope. Matches username or full name.</div>
+      </div>
     </div>
   )
 }
