@@ -27,8 +27,22 @@ export const OVERVIEW_CSS = `
 .gb-avatar { width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #ccc; background:#eee; display:inline-block; }
 .gb-avatar-fallback { width:22px; height:22px; border-radius:50%; border:1px solid #ccc; background:#eee; display:inline-block; font-size:10px; line-height:22px; text-align:center; color:#555; }
 .gb-avatar.overlap, .gb-avatar-fallback.overlap { margin-left:-6px; }
-.gb-link { text-decoration:none; color:#1f78d1; }
-.gb-section { margin-top:20px; }
-.gb-error { color:#ec5941; }
-.gb-label-bold { font-weight:600; }
+.gb-link { text-decoration:none; color:#1f78d1; font-weight:600; font-size:14px; line-height:20px; }
+.gb-link:hover { text-decoration:underline; }
+.gb-select { position:relative; display:inline-block; }
+.gb-select-trigger { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.gb-select-trigger.disabled { cursor:not-allowed; opacity:.5; }
+.gb-select-menu { position:absolute; top:100%; left:0; background:#333238; border:1px solid #bbb; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.15); width:220px; padding:4px 0; z-index:999; max-height:260px; overflow:auto; }
+.gb-select-item { display:flex; align-items:center; gap:6px; padding:6px 10px; font-size:12px; cursor:pointer; }
+.gb-select-item:hover { background-color: buttonface; }
+.gb-select-item.active { background-color: buttonface; }
+.gb-select-empty { padding:6px 10px; font-size:11px; opacity:.6; }
+.gb-select-placeholder { font-size:11px; opacity:.7; }
+.gb-select-value { font-size:11px; }
+.gb-label { font-size:12px; font-weight:600; }
+.gb-filter-group { display:flex; flex-wrap:wrap; gap:18px; margin-top:10px; }
+.gb-project-filter-wrapper { display:flex; flex-direction:column; gap:4px; }
+.gb-project-filter-label, .gb-author-filter-label { font-weight:600; font-size:12px; }
+.gb-project-filter { display:flex; flex-direction:column; gap:4px; }
+.gb-mt6 { margin-top:6px; }
 `;

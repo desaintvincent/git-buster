@@ -476,29 +476,47 @@
     ] })
   ] });
 
+  // src/components/NonPersistentProjectFilter.tsx
+  var NonPersistentProjectFilter = ({ projects, selectedProject, setSelectedProject }) => {
+    const [open, setOpen] = d2(false);
+    const choose = (p3) => {
+      setSelectedProject(p3);
+      setOpen(false);
+    };
+    return /* @__PURE__ */ u3("div", { className: "gb-project-filter", children: /* @__PURE__ */ u3("div", { className: "gb-select", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${projects.length ? "" : "disabled"}`, disabled: !projects.length, onClick: () => projects.length && setOpen(!open), children: selectedProject ? /* @__PURE__ */ u3("span", { className: "gb-select-value", children: selectedProject }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All projects" }) }),
+      open && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!selectedProject ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All projects" }) }),
+        projects.map((p3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${p3 === selectedProject ? "active" : ""}`, onClick: () => choose(p3), children: /* @__PURE__ */ u3("span", { children: p3 }) }, p3)),
+        !projects.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No projects" })
+      ] })
+    ] }) });
+  };
+
   // src/components/NonPersistentAuthorFilter.tsx
-  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled }) => /* @__PURE__ */ u3("div", { className: "gb-ephemeral-wrapper", children: /* @__PURE__ */ u3("div", { className: "gb-ephemeral-inner", children: [
-    /* @__PURE__ */ u3("label", { className: "gb-label-bold", children: "Ephemeral author filter" }),
-    /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", children: [
-      /* @__PURE__ */ u3(
-        "input",
-        {
-          list: "gb-authors-list",
-          disabled,
-          value: selectedAuthor ?? "",
-          onInput: (e3) => {
-            const v3 = e3.target.value.trim();
-            setSelectedAuthor(v3 ? v3 : null);
-          },
-          placeholder: disabled ? "Disabled (Mine)" : "Type to filter by author...",
-          className: "gb-ephemeral-input"
-        }
-      ),
-      /* @__PURE__ */ u3("button", { type: "button", disabled: disabled || !selectedAuthor, onClick: () => setSelectedAuthor(null), className: "gb-btn", title: "Clear author filter", children: "Clear" })
-    ] }),
-    /* @__PURE__ */ u3("datalist", { id: "gb-authors-list", children: authors.map((a3) => /* @__PURE__ */ u3("option", { value: a3.username, label: a3.name })) }),
-    /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Not persisted. Filters after persistent author scope. Matches username or full name." })
-  ] }) });
+  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled }) => {
+    const [open, setOpen] = d2(false);
+    const uniqueAuthors = authors.filter((a3) => !!a3?.username);
+    const current = uniqueAuthors.find((a3) => a3.username === selectedAuthor) || null;
+    const choose = (username) => {
+      setSelectedAuthor(username);
+      setOpen(false);
+    };
+    return /* @__PURE__ */ u3("div", { className: "gb-ephemeral-wrapper", children: /* @__PURE__ */ u3("div", { className: "gb-ephemeral-inner", children: /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", children: /* @__PURE__ */ u3("div", { className: "gb-select", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), title: disabled ? "Disabled when author scope is Mine" : "", children: [
+        current ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? current.username : "" })
+      ] }),
+      open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }) }),
+        uniqueAuthors.map((a3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${a3.username === selectedAuthor ? "active" : ""}`, onClick: () => choose(a3.username), children: [
+          /* @__PURE__ */ u3("img", { src: a3.avatar_url, alt: a3.username, className: "gb-avatar" }),
+          /* @__PURE__ */ u3("span", { children: a3.username })
+        ] }, a3.id)),
+        !uniqueAuthors.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No authors" })
+      ] })
+    ] }) }) }) });
+  };
 
   // src/UserAvatar.tsx
   var UserAvatar = ({ user, overlap = false }) => {
@@ -559,7 +577,7 @@
             mr.target_branch
           ] })
         ] }),
-        /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath }),
+        /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
         /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
         /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
         /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
@@ -733,10 +751,24 @@
 .gb-avatar { width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #ccc; background:#eee; display:inline-block; }
 .gb-avatar-fallback { width:22px; height:22px; border-radius:50%; border:1px solid #ccc; background:#eee; display:inline-block; font-size:10px; line-height:22px; text-align:center; color:#555; }
 .gb-avatar.overlap, .gb-avatar-fallback.overlap { margin-left:-6px; }
-.gb-link { text-decoration:none; color:#1f78d1; }
-.gb-section { margin-top:20px; }
-.gb-error { color:#ec5941; }
-.gb-label-bold { font-weight:600; }
+.gb-link { text-decoration:none; color:#1f78d1; font-weight:600; font-size:14px; line-height:20px; }
+.gb-link:hover { text-decoration:underline; }
+.gb-select { position:relative; display:inline-block; }
+.gb-select-trigger { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.gb-select-trigger.disabled { cursor:not-allowed; opacity:.5; }
+.gb-select-menu { position:absolute; top:100%; left:0; background:#333238; border:1px solid #bbb; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.15); width:220px; padding:4px 0; z-index:999; max-height:260px; overflow:auto; }
+.gb-select-item { display:flex; align-items:center; gap:6px; padding:6px 10px; font-size:12px; cursor:pointer; }
+.gb-select-item:hover { background-color: buttonface; }
+.gb-select-item.active { background-color: buttonface; }
+.gb-select-empty { padding:6px 10px; font-size:11px; opacity:.6; }
+.gb-select-placeholder { font-size:11px; opacity:.7; }
+.gb-select-value { font-size:11px; }
+.gb-label { font-size:12px; font-weight:600; }
+.gb-filter-group { display:flex; flex-wrap:wrap; gap:18px; margin-top:10px; }
+.gb-project-filter-wrapper { display:flex; flex-direction:column; gap:4px; }
+.gb-project-filter-label, .gb-author-filter-label { font-weight:600; font-size:12px; }
+.gb-project-filter { display:flex; flex-direction:column; gap:4px; }
+.gb-mt6 { margin-top:6px; }
 `;
 
   // src/overviewComponent.tsx
@@ -768,6 +800,7 @@
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
     const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
+    const [selectedProject, setSelectedProject] = d2(null);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
@@ -777,12 +810,14 @@
         setSelectedAuthor(null);
       }
     }, [authorFilter, selectedAuthor]);
-    const authors = Array.from(new Map(mrs.map((mr) => [mr.author?.username || "", { username: mr.author?.username || "", name: mr.author?.name || "" }])).values()).filter((a3) => a3.username).sort((a3, b) => a3.username.localeCompare(b.username));
+    const authors = Array.from(new Map(mrs.map((mr) => [mr.author?.username || "", mr.author])).values()).filter((a3) => !!a3?.username);
+    const projectNames = Array.from(new Set(mrs.map((mr) => mr.projectPath.split("/").slice(-1)[0]))).sort((a3, b) => a3.localeCompare(b));
     const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
     const draftFiltered = hideDrafts ? titleFiltered.filter((mr) => !isDraftMr(mr)) : titleFiltered;
     const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
-    const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? hotfixFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : hotfixFiltered;
-    const fullyFilteredAuthorScoped = authorFilter === "mine" ? hotfixFiltered.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? hotfixFiltered.filter((mr) => mr.author?.username !== options2.username) : fullyFiltered;
+    const projectFiltered = selectedProject ? hotfixFiltered.filter((mr) => mr.projectPath.split("/").slice(-1)[0] === selectedProject) : hotfixFiltered;
+    const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? projectFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : projectFiltered;
+    const fullyFilteredAuthorScoped = authorFilter === "mine" ? projectFiltered.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? projectFiltered.filter((mr) => mr.author?.username !== options2.username) : fullyFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFilteredAuthorScoped.filter(isHotfixMr).length;
     const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, fullyFilteredAuthorScoped, reviewMetaRefreshToken);
@@ -792,6 +827,7 @@
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
       /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
+      /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects: projectNames, selectedProject, setSelectedProject }),
       /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3(

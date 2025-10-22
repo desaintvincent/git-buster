@@ -39,7 +39,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
               </div>
               <div className="gb-sub">{mr.source_branch} → {mr.target_branch}</div>
             </td>
-            <td className="gb-td">{mr.projectPath}</td>
+            <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
             <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
             <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
             <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
