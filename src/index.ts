@@ -207,15 +207,7 @@ const renderSyntheticPage = async () => {
     if (main) { main.style.display = 'none' }
 
     const page = document.createElement('div')
-    page.id = 'git-buster-page'
-    page.style.minHeight = 'calc(100vh - 60px)'
-    page.style.padding = '24px'
-    page.style.color = 'var(--gl-text-color, #222)'
-    page.style.fontFamily = 'var(--gl-font-family, system-ui, sans-serif)'
-    page.innerHTML = `<h1 style="margin-top:0;">Git Buster Overview</h1>
-    <p style="max-width:720px">Synthetic page injected by the extension. It summarizes merge requests visible on the current list.</p>
-    <div id="git-buster-overview" style="margin-top:20px;font-size:13px;line-height:18px"></div>
-    <div style="margin-top:32px;font-size:12px;opacity:.7">Base URL: ${options.baseUrl}</div>`
+    page.id = EXT_PAGE_ID
 
     const containerTarget = document.querySelector('.content-wrapper') || document.body
     containerTarget.appendChild(page)
@@ -223,11 +215,9 @@ const renderSyntheticPage = async () => {
     try {
         const allMr = await getAllMr()
         await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
-        const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
-        mountOverview(overviewElem, allMr, options)
+        mountOverview(page, options)
     } catch (e) {
-        const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
-        overviewElem.innerHTML = `<div style="color:#ec5941">Failed to build overview: ${(e as Error).message}</div>`
+        page.innerHTML = `<div style="color:#ec5941;padding:24px;font-family:var(--gl-font-family,system-ui,sans-serif)">Failed to build overview: ${(e as Error).message}</div>`
         console.error('[git-buster] overview error', e)
     }
 }

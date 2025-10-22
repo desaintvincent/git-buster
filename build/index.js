@@ -74,39 +74,39 @@
   var v = [];
   var y = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i;
   var w = Array.isArray;
-  function d(n2, l2) {
-    for (var u3 in l2) n2[u3] = l2[u3];
+  function d(n2, l3) {
+    for (var u4 in l3) n2[u4] = l3[u4];
     return n2;
   }
   function g(n2) {
     n2 && n2.parentNode && n2.parentNode.removeChild(n2);
   }
-  function _(l2, u3, t2) {
-    var i3, r2, o2, e2 = {};
-    for (o2 in u3) "key" == o2 ? i3 = u3[o2] : "ref" == o2 ? r2 = u3[o2] : e2[o2] = u3[o2];
-    if (arguments.length > 2 && (e2.children = arguments.length > 3 ? n.call(arguments, 2) : t2), "function" == typeof l2 && null != l2.defaultProps) for (o2 in l2.defaultProps) void 0 === e2[o2] && (e2[o2] = l2.defaultProps[o2]);
-    return m(l2, e2, i3, r2, null);
+  function _(l3, u4, t3) {
+    var i4, r3, o3, e3 = {};
+    for (o3 in u4) "key" == o3 ? i4 = u4[o3] : "ref" == o3 ? r3 = u4[o3] : e3[o3] = u4[o3];
+    if (arguments.length > 2 && (e3.children = arguments.length > 3 ? n.call(arguments, 2) : t3), "function" == typeof l3 && null != l3.defaultProps) for (o3 in l3.defaultProps) void 0 === e3[o3] && (e3[o3] = l3.defaultProps[o3]);
+    return m(l3, e3, i4, r3, null);
   }
-  function m(n2, t2, i3, r2, o2) {
-    var e2 = { type: n2, props: t2, key: i3, ref: r2, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: null == o2 ? ++u : o2, __i: -1, __u: 0 };
-    return null == o2 && null != l.vnode && l.vnode(e2), e2;
+  function m(n2, t3, i4, r3, o3) {
+    var e3 = { type: n2, props: t3, key: i4, ref: r3, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: null == o3 ? ++u : o3, __i: -1, __u: 0 };
+    return null == o3 && null != l.vnode && l.vnode(e3), e3;
   }
   function k(n2) {
     return n2.children;
   }
-  function x(n2, l2) {
-    this.props = n2, this.context = l2;
+  function x(n2, l3) {
+    this.props = n2, this.context = l3;
   }
-  function S(n2, l2) {
-    if (null == l2) return n2.__ ? S(n2.__, n2.__i + 1) : null;
-    for (var u3; l2 < n2.__k.length; l2++) if (null != (u3 = n2.__k[l2]) && null != u3.__e) return u3.__e;
+  function S(n2, l3) {
+    if (null == l3) return n2.__ ? S(n2.__, n2.__i + 1) : null;
+    for (var u4; l3 < n2.__k.length; l3++) if (null != (u4 = n2.__k[l3]) && null != u4.__e) return u4.__e;
     return "function" == typeof n2.type ? S(n2) : null;
   }
   function C(n2) {
-    var l2, u3;
+    var l3, u4;
     if (null != (n2 = n2.__) && null != n2.__c) {
-      for (n2.__e = n2.__c.base = null, l2 = 0; l2 < n2.__k.length; l2++) if (null != (u3 = n2.__k[l2]) && null != u3.__e) {
-        n2.__e = n2.__c.base = u3.__e;
+      for (n2.__e = n2.__c.base = null, l3 = 0; l3 < n2.__k.length; l3++) if (null != (u4 = n2.__k[l3]) && null != u4.__e) {
+        n2.__e = n2.__c.base = u4.__e;
         break;
       }
       return C(n2);
@@ -116,251 +116,457 @@
     (!n2.__d && (n2.__d = true) && i.push(n2) && !$.__r++ || r != l.debounceRendering) && ((r = l.debounceRendering) || o)($);
   }
   function $() {
-    for (var n2, u3, t2, r2, o2, f3, c2, s2 = 1; i.length; ) i.length > s2 && i.sort(e), n2 = i.shift(), s2 = i.length, n2.__d && (t2 = void 0, r2 = void 0, o2 = (r2 = (u3 = n2).__v).__e, f3 = [], c2 = [], u3.__P && ((t2 = d({}, r2)).__v = r2.__v + 1, l.vnode && l.vnode(t2), O(u3.__P, t2, r2, u3.__n, u3.__P.namespaceURI, 32 & r2.__u ? [o2] : null, f3, null == o2 ? S(r2) : o2, !!(32 & r2.__u), c2), t2.__v = r2.__v, t2.__.__k[t2.__i] = t2, N(f3, t2, c2), r2.__e = r2.__ = null, t2.__e != o2 && C(t2)));
+    for (var n2, u4, t3, r3, o3, f4, c3, s3 = 1; i.length; ) i.length > s3 && i.sort(e), n2 = i.shift(), s3 = i.length, n2.__d && (t3 = void 0, r3 = void 0, o3 = (r3 = (u4 = n2).__v).__e, f4 = [], c3 = [], u4.__P && ((t3 = d({}, r3)).__v = r3.__v + 1, l.vnode && l.vnode(t3), O(u4.__P, t3, r3, u4.__n, u4.__P.namespaceURI, 32 & r3.__u ? [o3] : null, f4, null == o3 ? S(r3) : o3, !!(32 & r3.__u), c3), t3.__v = r3.__v, t3.__.__k[t3.__i] = t3, N(f4, t3, c3), r3.__e = r3.__ = null, t3.__e != o3 && C(t3)));
     $.__r = 0;
   }
-  function I(n2, l2, u3, t2, i3, r2, o2, e2, f3, c2, s2) {
-    var a2, h2, y2, w2, d2, g2, _2, m2 = t2 && t2.__k || v, b = l2.length;
-    for (f3 = P(u3, l2, m2, f3, b), a2 = 0; a2 < b; a2++) null != (y2 = u3.__k[a2]) && (h2 = -1 == y2.__i ? p : m2[y2.__i] || p, y2.__i = a2, g2 = O(n2, y2, h2, i3, r2, o2, e2, f3, c2, s2), w2 = y2.__e, y2.ref && h2.ref != y2.ref && (h2.ref && B(h2.ref, null, y2), s2.push(y2.ref, y2.__c || w2, y2)), null == d2 && null != w2 && (d2 = w2), (_2 = !!(4 & y2.__u)) || h2.__k === y2.__k ? f3 = A(y2, f3, n2, _2) : "function" == typeof y2.type && void 0 !== g2 ? f3 = g2 : w2 && (f3 = w2.nextSibling), y2.__u &= -7);
-    return u3.__e = d2, f3;
+  function I(n2, l3, u4, t3, i4, r3, o3, e3, f4, c3, s3) {
+    var a3, h3, y3, w3, d3, g2, _2, m3 = t3 && t3.__k || v, b = l3.length;
+    for (f4 = P(u4, l3, m3, f4, b), a3 = 0; a3 < b; a3++) null != (y3 = u4.__k[a3]) && (h3 = -1 == y3.__i ? p : m3[y3.__i] || p, y3.__i = a3, g2 = O(n2, y3, h3, i4, r3, o3, e3, f4, c3, s3), w3 = y3.__e, y3.ref && h3.ref != y3.ref && (h3.ref && B(h3.ref, null, y3), s3.push(y3.ref, y3.__c || w3, y3)), null == d3 && null != w3 && (d3 = w3), (_2 = !!(4 & y3.__u)) || h3.__k === y3.__k ? f4 = A(y3, f4, n2, _2) : "function" == typeof y3.type && void 0 !== g2 ? f4 = g2 : w3 && (f4 = w3.nextSibling), y3.__u &= -7);
+    return u4.__e = d3, f4;
   }
-  function P(n2, l2, u3, t2, i3) {
-    var r2, o2, e2, f3, c2, s2 = u3.length, a2 = s2, h2 = 0;
-    for (n2.__k = new Array(i3), r2 = 0; r2 < i3; r2++) null != (o2 = l2[r2]) && "boolean" != typeof o2 && "function" != typeof o2 ? (f3 = r2 + h2, (o2 = n2.__k[r2] = "string" == typeof o2 || "number" == typeof o2 || "bigint" == typeof o2 || o2.constructor == String ? m(null, o2, null, null, null) : w(o2) ? m(k, { children: o2 }, null, null, null) : null == o2.constructor && o2.__b > 0 ? m(o2.type, o2.props, o2.key, o2.ref ? o2.ref : null, o2.__v) : o2).__ = n2, o2.__b = n2.__b + 1, e2 = null, -1 != (c2 = o2.__i = L(o2, u3, f3, a2)) && (a2--, (e2 = u3[c2]) && (e2.__u |= 2)), null == e2 || null == e2.__v ? (-1 == c2 && (i3 > s2 ? h2-- : i3 < s2 && h2++), "function" != typeof o2.type && (o2.__u |= 4)) : c2 != f3 && (c2 == f3 - 1 ? h2-- : c2 == f3 + 1 ? h2++ : (c2 > f3 ? h2-- : h2++, o2.__u |= 4))) : n2.__k[r2] = null;
-    if (a2) for (r2 = 0; r2 < s2; r2++) null != (e2 = u3[r2]) && 0 == (2 & e2.__u) && (e2.__e == t2 && (t2 = S(e2)), D(e2, e2));
-    return t2;
+  function P(n2, l3, u4, t3, i4) {
+    var r3, o3, e3, f4, c3, s3 = u4.length, a3 = s3, h3 = 0;
+    for (n2.__k = new Array(i4), r3 = 0; r3 < i4; r3++) null != (o3 = l3[r3]) && "boolean" != typeof o3 && "function" != typeof o3 ? (f4 = r3 + h3, (o3 = n2.__k[r3] = "string" == typeof o3 || "number" == typeof o3 || "bigint" == typeof o3 || o3.constructor == String ? m(null, o3, null, null, null) : w(o3) ? m(k, { children: o3 }, null, null, null) : null == o3.constructor && o3.__b > 0 ? m(o3.type, o3.props, o3.key, o3.ref ? o3.ref : null, o3.__v) : o3).__ = n2, o3.__b = n2.__b + 1, e3 = null, -1 != (c3 = o3.__i = L(o3, u4, f4, a3)) && (a3--, (e3 = u4[c3]) && (e3.__u |= 2)), null == e3 || null == e3.__v ? (-1 == c3 && (i4 > s3 ? h3-- : i4 < s3 && h3++), "function" != typeof o3.type && (o3.__u |= 4)) : c3 != f4 && (c3 == f4 - 1 ? h3-- : c3 == f4 + 1 ? h3++ : (c3 > f4 ? h3-- : h3++, o3.__u |= 4))) : n2.__k[r3] = null;
+    if (a3) for (r3 = 0; r3 < s3; r3++) null != (e3 = u4[r3]) && 0 == (2 & e3.__u) && (e3.__e == t3 && (t3 = S(e3)), D(e3, e3));
+    return t3;
   }
-  function A(n2, l2, u3, t2) {
-    var i3, r2;
+  function A(n2, l3, u4, t3) {
+    var i4, r3;
     if ("function" == typeof n2.type) {
-      for (i3 = n2.__k, r2 = 0; i3 && r2 < i3.length; r2++) i3[r2] && (i3[r2].__ = n2, l2 = A(i3[r2], l2, u3, t2));
-      return l2;
+      for (i4 = n2.__k, r3 = 0; i4 && r3 < i4.length; r3++) i4[r3] && (i4[r3].__ = n2, l3 = A(i4[r3], l3, u4, t3));
+      return l3;
     }
-    n2.__e != l2 && (t2 && (l2 && n2.type && !l2.parentNode && (l2 = S(n2)), u3.insertBefore(n2.__e, l2 || null)), l2 = n2.__e);
+    n2.__e != l3 && (t3 && (l3 && n2.type && !l3.parentNode && (l3 = S(n2)), u4.insertBefore(n2.__e, l3 || null)), l3 = n2.__e);
     do {
-      l2 = l2 && l2.nextSibling;
-    } while (null != l2 && 8 == l2.nodeType);
-    return l2;
+      l3 = l3 && l3.nextSibling;
+    } while (null != l3 && 8 == l3.nodeType);
+    return l3;
   }
-  function L(n2, l2, u3, t2) {
-    var i3, r2, o2, e2 = n2.key, f3 = n2.type, c2 = l2[u3], s2 = null != c2 && 0 == (2 & c2.__u);
-    if (null === c2 && null == n2.key || s2 && e2 == c2.key && f3 == c2.type) return u3;
-    if (t2 > (s2 ? 1 : 0)) {
-      for (i3 = u3 - 1, r2 = u3 + 1; i3 >= 0 || r2 < l2.length; ) if (null != (c2 = l2[o2 = i3 >= 0 ? i3-- : r2++]) && 0 == (2 & c2.__u) && e2 == c2.key && f3 == c2.type) return o2;
+  function L(n2, l3, u4, t3) {
+    var i4, r3, o3, e3 = n2.key, f4 = n2.type, c3 = l3[u4], s3 = null != c3 && 0 == (2 & c3.__u);
+    if (null === c3 && null == n2.key || s3 && e3 == c3.key && f4 == c3.type) return u4;
+    if (t3 > (s3 ? 1 : 0)) {
+      for (i4 = u4 - 1, r3 = u4 + 1; i4 >= 0 || r3 < l3.length; ) if (null != (c3 = l3[o3 = i4 >= 0 ? i4-- : r3++]) && 0 == (2 & c3.__u) && e3 == c3.key && f4 == c3.type) return o3;
     }
     return -1;
   }
-  function T(n2, l2, u3) {
-    "-" == l2[0] ? n2.setProperty(l2, null == u3 ? "" : u3) : n2[l2] = null == u3 ? "" : "number" != typeof u3 || y.test(l2) ? u3 : u3 + "px";
+  function T(n2, l3, u4) {
+    "-" == l3[0] ? n2.setProperty(l3, null == u4 ? "" : u4) : n2[l3] = null == u4 ? "" : "number" != typeof u4 || y.test(l3) ? u4 : u4 + "px";
   }
-  function j(n2, l2, u3, t2, i3) {
-    var r2, o2;
-    n: if ("style" == l2) if ("string" == typeof u3) n2.style.cssText = u3;
+  function j(n2, l3, u4, t3, i4) {
+    var r3, o3;
+    n: if ("style" == l3) if ("string" == typeof u4) n2.style.cssText = u4;
     else {
-      if ("string" == typeof t2 && (n2.style.cssText = t2 = ""), t2) for (l2 in t2) u3 && l2 in u3 || T(n2.style, l2, "");
-      if (u3) for (l2 in u3) t2 && u3[l2] == t2[l2] || T(n2.style, l2, u3[l2]);
+      if ("string" == typeof t3 && (n2.style.cssText = t3 = ""), t3) for (l3 in t3) u4 && l3 in u4 || T(n2.style, l3, "");
+      if (u4) for (l3 in u4) t3 && u4[l3] == t3[l3] || T(n2.style, l3, u4[l3]);
     }
-    else if ("o" == l2[0] && "n" == l2[1]) r2 = l2 != (l2 = l2.replace(f, "$1")), o2 = l2.toLowerCase(), l2 = o2 in n2 || "onFocusOut" == l2 || "onFocusIn" == l2 ? o2.slice(2) : l2.slice(2), n2.l || (n2.l = {}), n2.l[l2 + r2] = u3, u3 ? t2 ? u3.u = t2.u : (u3.u = c, n2.addEventListener(l2, r2 ? a : s, r2)) : n2.removeEventListener(l2, r2 ? a : s, r2);
+    else if ("o" == l3[0] && "n" == l3[1]) r3 = l3 != (l3 = l3.replace(f, "$1")), o3 = l3.toLowerCase(), l3 = o3 in n2 || "onFocusOut" == l3 || "onFocusIn" == l3 ? o3.slice(2) : l3.slice(2), n2.l || (n2.l = {}), n2.l[l3 + r3] = u4, u4 ? t3 ? u4.u = t3.u : (u4.u = c, n2.addEventListener(l3, r3 ? a : s, r3)) : n2.removeEventListener(l3, r3 ? a : s, r3);
     else {
-      if ("http://www.w3.org/2000/svg" == i3) l2 = l2.replace(/xlink(H|:h)/, "h").replace(/sName$/, "s");
-      else if ("width" != l2 && "height" != l2 && "href" != l2 && "list" != l2 && "form" != l2 && "tabIndex" != l2 && "download" != l2 && "rowSpan" != l2 && "colSpan" != l2 && "role" != l2 && "popover" != l2 && l2 in n2) try {
-        n2[l2] = null == u3 ? "" : u3;
+      if ("http://www.w3.org/2000/svg" == i4) l3 = l3.replace(/xlink(H|:h)/, "h").replace(/sName$/, "s");
+      else if ("width" != l3 && "height" != l3 && "href" != l3 && "list" != l3 && "form" != l3 && "tabIndex" != l3 && "download" != l3 && "rowSpan" != l3 && "colSpan" != l3 && "role" != l3 && "popover" != l3 && l3 in n2) try {
+        n2[l3] = null == u4 ? "" : u4;
         break n;
       } catch (n3) {
       }
-      "function" == typeof u3 || (null == u3 || false === u3 && "-" != l2[4] ? n2.removeAttribute(l2) : n2.setAttribute(l2, "popover" == l2 && 1 == u3 ? "" : u3));
+      "function" == typeof u4 || (null == u4 || false === u4 && "-" != l3[4] ? n2.removeAttribute(l3) : n2.setAttribute(l3, "popover" == l3 && 1 == u4 ? "" : u4));
     }
   }
   function F(n2) {
-    return function(u3) {
+    return function(u4) {
       if (this.l) {
-        var t2 = this.l[u3.type + n2];
-        if (null == u3.t) u3.t = c++;
-        else if (u3.t < t2.u) return;
-        return t2(l.event ? l.event(u3) : u3);
+        var t3 = this.l[u4.type + n2];
+        if (null == u4.t) u4.t = c++;
+        else if (u4.t < t3.u) return;
+        return t3(l.event ? l.event(u4) : u4);
       }
     };
   }
-  function O(n2, u3, t2, i3, r2, o2, e2, f3, c2, s2) {
-    var a2, h2, p2, v2, y2, _2, m2, b, S2, C2, M2, $2, P2, A2, H, L2, T2, j2 = u3.type;
-    if (null != u3.constructor) return null;
-    128 & t2.__u && (c2 = !!(32 & t2.__u), o2 = [f3 = u3.__e = t2.__e]), (a2 = l.__b) && a2(u3);
-    n: if ("function" == typeof j2) try {
-      if (b = u3.props, S2 = "prototype" in j2 && j2.prototype.render, C2 = (a2 = j2.contextType) && i3[a2.__c], M2 = a2 ? C2 ? C2.props.value : a2.__ : i3, t2.__c ? m2 = (h2 = u3.__c = t2.__c).__ = h2.__E : (S2 ? u3.__c = h2 = new j2(b, M2) : (u3.__c = h2 = new x(b, M2), h2.constructor = j2, h2.render = E), C2 && C2.sub(h2), h2.props = b, h2.state || (h2.state = {}), h2.context = M2, h2.__n = i3, p2 = h2.__d = true, h2.__h = [], h2._sb = []), S2 && null == h2.__s && (h2.__s = h2.state), S2 && null != j2.getDerivedStateFromProps && (h2.__s == h2.state && (h2.__s = d({}, h2.__s)), d(h2.__s, j2.getDerivedStateFromProps(b, h2.__s))), v2 = h2.props, y2 = h2.state, h2.__v = u3, p2) S2 && null == j2.getDerivedStateFromProps && null != h2.componentWillMount && h2.componentWillMount(), S2 && null != h2.componentDidMount && h2.__h.push(h2.componentDidMount);
+  function O(n2, u4, t3, i4, r3, o3, e3, f4, c3, s3) {
+    var a3, h3, p3, v3, y3, _2, m3, b, S2, C3, M2, $2, P2, A2, H, L2, T2, j3 = u4.type;
+    if (null != u4.constructor) return null;
+    128 & t3.__u && (c3 = !!(32 & t3.__u), o3 = [f4 = u4.__e = t3.__e]), (a3 = l.__b) && a3(u4);
+    n: if ("function" == typeof j3) try {
+      if (b = u4.props, S2 = "prototype" in j3 && j3.prototype.render, C3 = (a3 = j3.contextType) && i4[a3.__c], M2 = a3 ? C3 ? C3.props.value : a3.__ : i4, t3.__c ? m3 = (h3 = u4.__c = t3.__c).__ = h3.__E : (S2 ? u4.__c = h3 = new j3(b, M2) : (u4.__c = h3 = new x(b, M2), h3.constructor = j3, h3.render = E), C3 && C3.sub(h3), h3.props = b, h3.state || (h3.state = {}), h3.context = M2, h3.__n = i4, p3 = h3.__d = true, h3.__h = [], h3._sb = []), S2 && null == h3.__s && (h3.__s = h3.state), S2 && null != j3.getDerivedStateFromProps && (h3.__s == h3.state && (h3.__s = d({}, h3.__s)), d(h3.__s, j3.getDerivedStateFromProps(b, h3.__s))), v3 = h3.props, y3 = h3.state, h3.__v = u4, p3) S2 && null == j3.getDerivedStateFromProps && null != h3.componentWillMount && h3.componentWillMount(), S2 && null != h3.componentDidMount && h3.__h.push(h3.componentDidMount);
       else {
-        if (S2 && null == j2.getDerivedStateFromProps && b !== v2 && null != h2.componentWillReceiveProps && h2.componentWillReceiveProps(b, M2), !h2.__e && null != h2.shouldComponentUpdate && false === h2.shouldComponentUpdate(b, h2.__s, M2) || u3.__v == t2.__v) {
-          for (u3.__v != t2.__v && (h2.props = b, h2.state = h2.__s, h2.__d = false), u3.__e = t2.__e, u3.__k = t2.__k, u3.__k.some(function(n3) {
-            n3 && (n3.__ = u3);
-          }), $2 = 0; $2 < h2._sb.length; $2++) h2.__h.push(h2._sb[$2]);
-          h2._sb = [], h2.__h.length && e2.push(h2);
+        if (S2 && null == j3.getDerivedStateFromProps && b !== v3 && null != h3.componentWillReceiveProps && h3.componentWillReceiveProps(b, M2), !h3.__e && null != h3.shouldComponentUpdate && false === h3.shouldComponentUpdate(b, h3.__s, M2) || u4.__v == t3.__v) {
+          for (u4.__v != t3.__v && (h3.props = b, h3.state = h3.__s, h3.__d = false), u4.__e = t3.__e, u4.__k = t3.__k, u4.__k.some(function(n3) {
+            n3 && (n3.__ = u4);
+          }), $2 = 0; $2 < h3._sb.length; $2++) h3.__h.push(h3._sb[$2]);
+          h3._sb = [], h3.__h.length && e3.push(h3);
           break n;
         }
-        null != h2.componentWillUpdate && h2.componentWillUpdate(b, h2.__s, M2), S2 && null != h2.componentDidUpdate && h2.__h.push(function() {
-          h2.componentDidUpdate(v2, y2, _2);
+        null != h3.componentWillUpdate && h3.componentWillUpdate(b, h3.__s, M2), S2 && null != h3.componentDidUpdate && h3.__h.push(function() {
+          h3.componentDidUpdate(v3, y3, _2);
         });
       }
-      if (h2.context = M2, h2.props = b, h2.__P = n2, h2.__e = false, P2 = l.__r, A2 = 0, S2) {
-        for (h2.state = h2.__s, h2.__d = false, P2 && P2(u3), a2 = h2.render(h2.props, h2.state, h2.context), H = 0; H < h2._sb.length; H++) h2.__h.push(h2._sb[H]);
-        h2._sb = [];
+      if (h3.context = M2, h3.props = b, h3.__P = n2, h3.__e = false, P2 = l.__r, A2 = 0, S2) {
+        for (h3.state = h3.__s, h3.__d = false, P2 && P2(u4), a3 = h3.render(h3.props, h3.state, h3.context), H = 0; H < h3._sb.length; H++) h3.__h.push(h3._sb[H]);
+        h3._sb = [];
       } else do {
-        h2.__d = false, P2 && P2(u3), a2 = h2.render(h2.props, h2.state, h2.context), h2.state = h2.__s;
-      } while (h2.__d && ++A2 < 25);
-      h2.state = h2.__s, null != h2.getChildContext && (i3 = d(d({}, i3), h2.getChildContext())), S2 && !p2 && null != h2.getSnapshotBeforeUpdate && (_2 = h2.getSnapshotBeforeUpdate(v2, y2)), L2 = a2, null != a2 && a2.type === k && null == a2.key && (L2 = V(a2.props.children)), f3 = I(n2, w(L2) ? L2 : [L2], u3, t2, i3, r2, o2, e2, f3, c2, s2), h2.base = u3.__e, u3.__u &= -161, h2.__h.length && e2.push(h2), m2 && (h2.__E = h2.__ = null);
+        h3.__d = false, P2 && P2(u4), a3 = h3.render(h3.props, h3.state, h3.context), h3.state = h3.__s;
+      } while (h3.__d && ++A2 < 25);
+      h3.state = h3.__s, null != h3.getChildContext && (i4 = d(d({}, i4), h3.getChildContext())), S2 && !p3 && null != h3.getSnapshotBeforeUpdate && (_2 = h3.getSnapshotBeforeUpdate(v3, y3)), L2 = a3, null != a3 && a3.type === k && null == a3.key && (L2 = V(a3.props.children)), f4 = I(n2, w(L2) ? L2 : [L2], u4, t3, i4, r3, o3, e3, f4, c3, s3), h3.base = u4.__e, u4.__u &= -161, h3.__h.length && e3.push(h3), m3 && (h3.__E = h3.__ = null);
     } catch (n3) {
-      if (u3.__v = null, c2 || null != o2) if (n3.then) {
-        for (u3.__u |= c2 ? 160 : 128; f3 && 8 == f3.nodeType && f3.nextSibling; ) f3 = f3.nextSibling;
-        o2[o2.indexOf(f3)] = null, u3.__e = f3;
+      if (u4.__v = null, c3 || null != o3) if (n3.then) {
+        for (u4.__u |= c3 ? 160 : 128; f4 && 8 == f4.nodeType && f4.nextSibling; ) f4 = f4.nextSibling;
+        o3[o3.indexOf(f4)] = null, u4.__e = f4;
       } else {
-        for (T2 = o2.length; T2--; ) g(o2[T2]);
-        z(u3);
+        for (T2 = o3.length; T2--; ) g(o3[T2]);
+        z(u4);
       }
-      else u3.__e = t2.__e, u3.__k = t2.__k, n3.then || z(u3);
-      l.__e(n3, u3, t2);
+      else u4.__e = t3.__e, u4.__k = t3.__k, n3.then || z(u4);
+      l.__e(n3, u4, t3);
     }
-    else null == o2 && u3.__v == t2.__v ? (u3.__k = t2.__k, u3.__e = t2.__e) : f3 = u3.__e = q(t2.__e, u3, t2, i3, r2, o2, e2, c2, s2);
-    return (a2 = l.diffed) && a2(u3), 128 & u3.__u ? void 0 : f3;
+    else null == o3 && u4.__v == t3.__v ? (u4.__k = t3.__k, u4.__e = t3.__e) : f4 = u4.__e = q(t3.__e, u4, t3, i4, r3, o3, e3, c3, s3);
+    return (a3 = l.diffed) && a3(u4), 128 & u4.__u ? void 0 : f4;
   }
   function z(n2) {
     n2 && n2.__c && (n2.__c.__e = true), n2 && n2.__k && n2.__k.forEach(z);
   }
-  function N(n2, u3, t2) {
-    for (var i3 = 0; i3 < t2.length; i3++) B(t2[i3], t2[++i3], t2[++i3]);
-    l.__c && l.__c(u3, n2), n2.some(function(u4) {
+  function N(n2, u4, t3) {
+    for (var i4 = 0; i4 < t3.length; i4++) B(t3[i4], t3[++i4], t3[++i4]);
+    l.__c && l.__c(u4, n2), n2.some(function(u5) {
       try {
-        n2 = u4.__h, u4.__h = [], n2.some(function(n3) {
-          n3.call(u4);
+        n2 = u5.__h, u5.__h = [], n2.some(function(n3) {
+          n3.call(u5);
         });
       } catch (n3) {
-        l.__e(n3, u4.__v);
+        l.__e(n3, u5.__v);
       }
     });
   }
   function V(n2) {
     return "object" != typeof n2 || null == n2 || n2.__b && n2.__b > 0 ? n2 : w(n2) ? n2.map(V) : d({}, n2);
   }
-  function q(u3, t2, i3, r2, o2, e2, f3, c2, s2) {
-    var a2, h2, v2, y2, d2, _2, m2, b = i3.props, k2 = t2.props, x2 = t2.type;
-    if ("svg" == x2 ? o2 = "http://www.w3.org/2000/svg" : "math" == x2 ? o2 = "http://www.w3.org/1998/Math/MathML" : o2 || (o2 = "http://www.w3.org/1999/xhtml"), null != e2) {
-      for (a2 = 0; a2 < e2.length; a2++) if ((d2 = e2[a2]) && "setAttribute" in d2 == !!x2 && (x2 ? d2.localName == x2 : 3 == d2.nodeType)) {
-        u3 = d2, e2[a2] = null;
+  function q(u4, t3, i4, r3, o3, e3, f4, c3, s3) {
+    var a3, h3, v3, y3, d3, _2, m3, b = i4.props, k3 = t3.props, x2 = t3.type;
+    if ("svg" == x2 ? o3 = "http://www.w3.org/2000/svg" : "math" == x2 ? o3 = "http://www.w3.org/1998/Math/MathML" : o3 || (o3 = "http://www.w3.org/1999/xhtml"), null != e3) {
+      for (a3 = 0; a3 < e3.length; a3++) if ((d3 = e3[a3]) && "setAttribute" in d3 == !!x2 && (x2 ? d3.localName == x2 : 3 == d3.nodeType)) {
+        u4 = d3, e3[a3] = null;
         break;
       }
     }
-    if (null == u3) {
-      if (null == x2) return document.createTextNode(k2);
-      u3 = document.createElementNS(o2, x2, k2.is && k2), c2 && (l.__m && l.__m(t2, e2), c2 = false), e2 = null;
+    if (null == u4) {
+      if (null == x2) return document.createTextNode(k3);
+      u4 = document.createElementNS(o3, x2, k3.is && k3), c3 && (l.__m && l.__m(t3, e3), c3 = false), e3 = null;
     }
-    if (null == x2) b === k2 || c2 && u3.data == k2 || (u3.data = k2);
+    if (null == x2) b === k3 || c3 && u4.data == k3 || (u4.data = k3);
     else {
-      if (e2 = e2 && n.call(u3.childNodes), b = i3.props || p, !c2 && null != e2) for (b = {}, a2 = 0; a2 < u3.attributes.length; a2++) b[(d2 = u3.attributes[a2]).name] = d2.value;
-      for (a2 in b) if (d2 = b[a2], "children" == a2) ;
-      else if ("dangerouslySetInnerHTML" == a2) v2 = d2;
-      else if (!(a2 in k2)) {
-        if ("value" == a2 && "defaultValue" in k2 || "checked" == a2 && "defaultChecked" in k2) continue;
-        j(u3, a2, null, d2, o2);
+      if (e3 = e3 && n.call(u4.childNodes), b = i4.props || p, !c3 && null != e3) for (b = {}, a3 = 0; a3 < u4.attributes.length; a3++) b[(d3 = u4.attributes[a3]).name] = d3.value;
+      for (a3 in b) if (d3 = b[a3], "children" == a3) ;
+      else if ("dangerouslySetInnerHTML" == a3) v3 = d3;
+      else if (!(a3 in k3)) {
+        if ("value" == a3 && "defaultValue" in k3 || "checked" == a3 && "defaultChecked" in k3) continue;
+        j(u4, a3, null, d3, o3);
       }
-      for (a2 in k2) d2 = k2[a2], "children" == a2 ? y2 = d2 : "dangerouslySetInnerHTML" == a2 ? h2 = d2 : "value" == a2 ? _2 = d2 : "checked" == a2 ? m2 = d2 : c2 && "function" != typeof d2 || b[a2] === d2 || j(u3, a2, d2, b[a2], o2);
-      if (h2) c2 || v2 && (h2.__html == v2.__html || h2.__html == u3.innerHTML) || (u3.innerHTML = h2.__html), t2.__k = [];
-      else if (v2 && (u3.innerHTML = ""), I("template" == t2.type ? u3.content : u3, w(y2) ? y2 : [y2], t2, i3, r2, "foreignObject" == x2 ? "http://www.w3.org/1999/xhtml" : o2, e2, f3, e2 ? e2[0] : i3.__k && S(i3, 0), c2, s2), null != e2) for (a2 = e2.length; a2--; ) g(e2[a2]);
-      c2 || (a2 = "value", "progress" == x2 && null == _2 ? u3.removeAttribute("value") : null != _2 && (_2 !== u3[a2] || "progress" == x2 && !_2 || "option" == x2 && _2 != b[a2]) && j(u3, a2, _2, b[a2], o2), a2 = "checked", null != m2 && m2 != u3[a2] && j(u3, a2, m2, b[a2], o2));
+      for (a3 in k3) d3 = k3[a3], "children" == a3 ? y3 = d3 : "dangerouslySetInnerHTML" == a3 ? h3 = d3 : "value" == a3 ? _2 = d3 : "checked" == a3 ? m3 = d3 : c3 && "function" != typeof d3 || b[a3] === d3 || j(u4, a3, d3, b[a3], o3);
+      if (h3) c3 || v3 && (h3.__html == v3.__html || h3.__html == u4.innerHTML) || (u4.innerHTML = h3.__html), t3.__k = [];
+      else if (v3 && (u4.innerHTML = ""), I("template" == t3.type ? u4.content : u4, w(y3) ? y3 : [y3], t3, i4, r3, "foreignObject" == x2 ? "http://www.w3.org/1999/xhtml" : o3, e3, f4, e3 ? e3[0] : i4.__k && S(i4, 0), c3, s3), null != e3) for (a3 = e3.length; a3--; ) g(e3[a3]);
+      c3 || (a3 = "value", "progress" == x2 && null == _2 ? u4.removeAttribute("value") : null != _2 && (_2 !== u4[a3] || "progress" == x2 && !_2 || "option" == x2 && _2 != b[a3]) && j(u4, a3, _2, b[a3], o3), a3 = "checked", null != m3 && m3 != u4[a3] && j(u4, a3, m3, b[a3], o3));
     }
-    return u3;
+    return u4;
   }
-  function B(n2, u3, t2) {
+  function B(n2, u4, t3) {
     try {
       if ("function" == typeof n2) {
-        var i3 = "function" == typeof n2.__u;
-        i3 && n2.__u(), i3 && null == u3 || (n2.__u = n2(u3));
-      } else n2.current = u3;
+        var i4 = "function" == typeof n2.__u;
+        i4 && n2.__u(), i4 && null == u4 || (n2.__u = n2(u4));
+      } else n2.current = u4;
     } catch (n3) {
-      l.__e(n3, t2);
+      l.__e(n3, t3);
     }
   }
-  function D(n2, u3, t2) {
-    var i3, r2;
-    if (l.unmount && l.unmount(n2), (i3 = n2.ref) && (i3.current && i3.current != n2.__e || B(i3, null, u3)), null != (i3 = n2.__c)) {
-      if (i3.componentWillUnmount) try {
-        i3.componentWillUnmount();
+  function D(n2, u4, t3) {
+    var i4, r3;
+    if (l.unmount && l.unmount(n2), (i4 = n2.ref) && (i4.current && i4.current != n2.__e || B(i4, null, u4)), null != (i4 = n2.__c)) {
+      if (i4.componentWillUnmount) try {
+        i4.componentWillUnmount();
       } catch (n3) {
-        l.__e(n3, u3);
+        l.__e(n3, u4);
       }
-      i3.base = i3.__P = null;
+      i4.base = i4.__P = null;
     }
-    if (i3 = n2.__k) for (r2 = 0; r2 < i3.length; r2++) i3[r2] && D(i3[r2], u3, t2 || "function" != typeof n2.type);
-    t2 || g(n2.__e), n2.__c = n2.__ = n2.__e = void 0;
+    if (i4 = n2.__k) for (r3 = 0; r3 < i4.length; r3++) i4[r3] && D(i4[r3], u4, t3 || "function" != typeof n2.type);
+    t3 || g(n2.__e), n2.__c = n2.__ = n2.__e = void 0;
   }
-  function E(n2, l2, u3) {
-    return this.constructor(n2, u3);
+  function E(n2, l3, u4) {
+    return this.constructor(n2, u4);
   }
-  function G(u3, t2, i3) {
-    var r2, o2, e2, f3;
-    t2 == document && (t2 = document.documentElement), l.__ && l.__(u3, t2), o2 = (r2 = "function" == typeof i3) ? null : i3 && i3.__k || t2.__k, e2 = [], f3 = [], O(t2, u3 = (!r2 && i3 || t2).__k = _(k, null, [u3]), o2 || p, p, t2.namespaceURI, !r2 && i3 ? [i3] : o2 ? null : t2.firstChild ? n.call(t2.childNodes) : null, e2, !r2 && i3 ? i3 : o2 ? o2.__e : t2.firstChild, r2, f3), N(e2, u3, f3);
+  function G(u4, t3, i4) {
+    var r3, o3, e3, f4;
+    t3 == document && (t3 = document.documentElement), l.__ && l.__(u4, t3), o3 = (r3 = "function" == typeof i4) ? null : i4 && i4.__k || t3.__k, e3 = [], f4 = [], O(t3, u4 = (!r3 && i4 || t3).__k = _(k, null, [u4]), o3 || p, p, t3.namespaceURI, !r3 && i4 ? [i4] : o3 ? null : t3.firstChild ? n.call(t3.childNodes) : null, e3, !r3 && i4 ? i4 : o3 ? o3.__e : t3.firstChild, r3, f4), N(e3, u4, f4);
   }
-  n = v.slice, l = { __e: function(n2, l2, u3, t2) {
-    for (var i3, r2, o2; l2 = l2.__; ) if ((i3 = l2.__c) && !i3.__) try {
-      if ((r2 = i3.constructor) && null != r2.getDerivedStateFromError && (i3.setState(r2.getDerivedStateFromError(n2)), o2 = i3.__d), null != i3.componentDidCatch && (i3.componentDidCatch(n2, t2 || {}), o2 = i3.__d), o2) return i3.__E = i3;
-    } catch (l3) {
-      n2 = l3;
+  n = v.slice, l = { __e: function(n2, l3, u4, t3) {
+    for (var i4, r3, o3; l3 = l3.__; ) if ((i4 = l3.__c) && !i4.__) try {
+      if ((r3 = i4.constructor) && null != r3.getDerivedStateFromError && (i4.setState(r3.getDerivedStateFromError(n2)), o3 = i4.__d), null != i4.componentDidCatch && (i4.componentDidCatch(n2, t3 || {}), o3 = i4.__d), o3) return i4.__E = i4;
+    } catch (l4) {
+      n2 = l4;
     }
     throw n2;
   } }, u = 0, t = function(n2) {
     return null != n2 && null == n2.constructor;
-  }, x.prototype.setState = function(n2, l2) {
-    var u3;
-    u3 = null != this.__s && this.__s != this.state ? this.__s : this.__s = d({}, this.state), "function" == typeof n2 && (n2 = n2(d({}, u3), this.props)), n2 && d(u3, n2), null != n2 && this.__v && (l2 && this._sb.push(l2), M(this));
+  }, x.prototype.setState = function(n2, l3) {
+    var u4;
+    u4 = null != this.__s && this.__s != this.state ? this.__s : this.__s = d({}, this.state), "function" == typeof n2 && (n2 = n2(d({}, u4), this.props)), n2 && d(u4, n2), null != n2 && this.__v && (l3 && this._sb.push(l3), M(this));
   }, x.prototype.forceUpdate = function(n2) {
     this.__v && (this.__e = true, n2 && this.__h.push(n2), M(this));
-  }, x.prototype.render = k, i = [], o = "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, e = function(n2, l2) {
-    return n2.__v.__b - l2.__v.__b;
+  }, x.prototype.render = k, i = [], o = "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, e = function(n2, l3) {
+    return n2.__v.__b - l3.__v.__b;
   }, $.__r = 0, f = /(PointerCapture)$|Capture$/i, c = 0, s = F(false), a = F(true), h = 0;
 
+  // node_modules/preact/hooks/dist/hooks.module.js
+  var t2;
+  var r2;
+  var u2;
+  var i2;
+  var o2 = 0;
+  var f2 = [];
+  var c2 = l;
+  var e2 = c2.__b;
+  var a2 = c2.__r;
+  var v2 = c2.diffed;
+  var l2 = c2.__c;
+  var m2 = c2.unmount;
+  var s2 = c2.__;
+  function p2(n2, t3) {
+    c2.__h && c2.__h(r2, n2, o2 || t3), o2 = 0;
+    var u4 = r2.__H || (r2.__H = { __: [], __h: [] });
+    return n2 >= u4.__.length && u4.__.push({}), u4.__[n2];
+  }
+  function d2(n2) {
+    return o2 = 1, h2(D2, n2);
+  }
+  function h2(n2, u4, i4) {
+    var o3 = p2(t2++, 2);
+    if (o3.t = n2, !o3.__c && (o3.__ = [i4 ? i4(u4) : D2(void 0, u4), function(n3) {
+      var t3 = o3.__N ? o3.__N[0] : o3.__[0], r3 = o3.t(t3, n3);
+      t3 !== r3 && (o3.__N = [r3, o3.__[1]], o3.__c.setState({}));
+    }], o3.__c = r2, !r2.__f)) {
+      var f4 = function(n3, t3, r3) {
+        if (!o3.__c.__H) return true;
+        var u5 = o3.__c.__H.__.filter(function(n4) {
+          return !!n4.__c;
+        });
+        if (u5.every(function(n4) {
+          return !n4.__N;
+        })) return !c3 || c3.call(this, n3, t3, r3);
+        var i5 = o3.__c.props !== n3;
+        return u5.forEach(function(n4) {
+          if (n4.__N) {
+            var t4 = n4.__[0];
+            n4.__ = n4.__N, n4.__N = void 0, t4 !== n4.__[0] && (i5 = true);
+          }
+        }), c3 && c3.call(this, n3, t3, r3) || i5;
+      };
+      r2.__f = true;
+      var c3 = r2.shouldComponentUpdate, e3 = r2.componentWillUpdate;
+      r2.componentWillUpdate = function(n3, t3, r3) {
+        if (this.__e) {
+          var u5 = c3;
+          c3 = void 0, f4(n3, t3, r3), c3 = u5;
+        }
+        e3 && e3.call(this, n3, t3, r3);
+      }, r2.shouldComponentUpdate = f4;
+    }
+    return o3.__N || o3.__;
+  }
+  function y2(n2, u4) {
+    var i4 = p2(t2++, 3);
+    !c2.__s && C2(i4.__H, u4) && (i4.__ = n2, i4.u = u4, r2.__H.__h.push(i4));
+  }
+  function j2() {
+    for (var n2; n2 = f2.shift(); ) if (n2.__P && n2.__H) try {
+      n2.__H.__h.forEach(z2), n2.__H.__h.forEach(B2), n2.__H.__h = [];
+    } catch (t3) {
+      n2.__H.__h = [], c2.__e(t3, n2.__v);
+    }
+  }
+  c2.__b = function(n2) {
+    r2 = null, e2 && e2(n2);
+  }, c2.__ = function(n2, t3) {
+    n2 && t3.__k && t3.__k.__m && (n2.__m = t3.__k.__m), s2 && s2(n2, t3);
+  }, c2.__r = function(n2) {
+    a2 && a2(n2), t2 = 0;
+    var i4 = (r2 = n2.__c).__H;
+    i4 && (u2 === r2 ? (i4.__h = [], r2.__h = [], i4.__.forEach(function(n3) {
+      n3.__N && (n3.__ = n3.__N), n3.u = n3.__N = void 0;
+    })) : (i4.__h.forEach(z2), i4.__h.forEach(B2), i4.__h = [], t2 = 0)), u2 = r2;
+  }, c2.diffed = function(n2) {
+    v2 && v2(n2);
+    var t3 = n2.__c;
+    t3 && t3.__H && (t3.__H.__h.length && (1 !== f2.push(t3) && i2 === c2.requestAnimationFrame || ((i2 = c2.requestAnimationFrame) || w2)(j2)), t3.__H.__.forEach(function(n3) {
+      n3.u && (n3.__H = n3.u), n3.u = void 0;
+    })), u2 = r2 = null;
+  }, c2.__c = function(n2, t3) {
+    t3.some(function(n3) {
+      try {
+        n3.__h.forEach(z2), n3.__h = n3.__h.filter(function(n4) {
+          return !n4.__ || B2(n4);
+        });
+      } catch (r3) {
+        t3.some(function(n4) {
+          n4.__h && (n4.__h = []);
+        }), t3 = [], c2.__e(r3, n3.__v);
+      }
+    }), l2 && l2(n2, t3);
+  }, c2.unmount = function(n2) {
+    m2 && m2(n2);
+    var t3, r3 = n2.__c;
+    r3 && r3.__H && (r3.__H.__.forEach(function(n3) {
+      try {
+        z2(n3);
+      } catch (n4) {
+        t3 = n4;
+      }
+    }), r3.__H = void 0, t3 && c2.__e(t3, r3.__v));
+  };
+  var k2 = "function" == typeof requestAnimationFrame;
+  function w2(n2) {
+    var t3, r3 = function() {
+      clearTimeout(u4), k2 && cancelAnimationFrame(t3), setTimeout(n2);
+    }, u4 = setTimeout(r3, 35);
+    k2 && (t3 = requestAnimationFrame(r3));
+  }
+  function z2(n2) {
+    var t3 = r2, u4 = n2.__c;
+    "function" == typeof u4 && (n2.__c = void 0, u4()), r2 = t3;
+  }
+  function B2(n2) {
+    var t3 = r2;
+    n2.__c = n2.__(), r2 = t3;
+  }
+  function C2(n2, t3) {
+    return !n2 || n2.length !== t3.length || t3.some(function(t4, r3) {
+      return t4 !== n2[r3];
+    });
+  }
+  function D2(n2, t3) {
+    return "function" == typeof t3 ? t3(n2) : t3;
+  }
+
   // node_modules/preact/jsx-runtime/dist/jsxRuntime.module.js
-  var f2 = 0;
-  var i2 = Array.isArray;
-  function u2(e2, t2, n2, o2, i3, u3) {
-    t2 || (t2 = {});
-    var a2, c2, p2 = t2;
-    if ("ref" in p2) for (c2 in p2 = {}, t2) "ref" == c2 ? a2 = t2[c2] : p2[c2] = t2[c2];
-    var l2 = { type: e2, props: p2, key: n2, ref: a2, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: --f2, __i: -1, __u: 0, __source: i3, __self: u3 };
-    if ("function" == typeof e2 && (a2 = e2.defaultProps)) for (c2 in a2) void 0 === p2[c2] && (p2[c2] = a2[c2]);
-    return l.vnode && l.vnode(l2), l2;
+  var f3 = 0;
+  var i3 = Array.isArray;
+  function u3(e3, t3, n2, o3, i4, u4) {
+    t3 || (t3 = {});
+    var a3, c3, p3 = t3;
+    if ("ref" in p3) for (c3 in p3 = {}, t3) "ref" == c3 ? a3 = t3[c3] : p3[c3] = t3[c3];
+    var l3 = { type: e3, props: p3, key: n2, ref: a3, __k: null, __: null, __b: 0, __e: null, __c: null, constructor: void 0, __v: --f3, __i: -1, __u: 0, __source: i4, __self: u4 };
+    if ("function" == typeof e3 && (a3 = e3.defaultProps)) for (c3 in a3) void 0 === p3[c3] && (p3[c3] = a3[c3]);
+    return l.vnode && l.vnode(l3), l3;
   }
 
   // src/overviewComponent.tsx
-  var escapeHtml = (s2) => s2.replace(/</g, "&lt;");
-  var OverviewTable = ({ mrs, options: options2 }) => {
-    return /* @__PURE__ */ u2(k, { children: [
-      "PATATE",
-      /* @__PURE__ */ u2("table", { style: "border-collapse:collapse;min-width:680px;width:100%", children: [
-        /* @__PURE__ */ u2("thead", { children: /* @__PURE__ */ u2("tr", { children: [
-          /* @__PURE__ */ u2("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
-          /* @__PURE__ */ u2("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Author" }),
-          /* @__PURE__ */ u2("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Tags" }),
-          /* @__PURE__ */ u2("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Badge" })
-        ] }) }),
-        /* @__PURE__ */ u2("tbody", { children: mrs.map((mr) => {
-          const tags = getTags(mr);
-          const mine = isMrMine(mr, options2);
-          const badge = getBadge(mine, tags);
-          return /* @__PURE__ */ u2("tr", { children: [
-            /* @__PURE__ */ u2("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
-              /* @__PURE__ */ u2("a", { href: mr.web_url, target: "_blank", style: "text-decoration:none;color:#1f78d1", children: escapeHtml(mr.title) }),
-              /* @__PURE__ */ u2("div", { style: "opacity:.6;font-size:11px", children: [
-                mr.source_branch,
-                " \u2192 ",
-                mr.target_branch
-              ] })
-            ] }),
-            /* @__PURE__ */ u2("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
-            /* @__PURE__ */ u2("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: tags.length ? tags.map((t2) => /* @__PURE__ */ u2("span", { dangerouslySetInnerHTML: { __html: displayBadge(t2, mine) } })) : /* @__PURE__ */ u2("span", { dangerouslySetInnerHTML: { __html: displayBadge("can_be_merged" /* CAN_BE_MERGED */, mine) } }) }),
-            /* @__PURE__ */ u2("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: /* @__PURE__ */ u2("span", { style: `background:${colors[badge]};padding:2px 6px;border-radius:4px;border:1px solid #000;`, children: badge }) })
-          ] }, mr.id);
-        }) })
+  var PROJECT_PATHS = [
+    "sywa/sywa/frontend",
+    "sywa/sywa/backend",
+    "sywa/sywa/sywatt",
+    "sywa/sywa/sywack"
+  ];
+  var fetchOpenedMrsForProject = async (baseUrl, projectPath) => {
+    const encoded = encodeURIComponent(projectPath);
+    const url = `${baseUrl}/api/v4/projects/${encoded}/merge_requests?state=opened&per_page=100`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed ${projectPath}: ${res.status}`);
+    }
+    const data = await res.json();
+    return data.map((mr) => ({ ...mr, projectPath }));
+  };
+  var useProjectMergeRequests = (baseUrl) => {
+    const [mrs, setMrs] = d2([]);
+    const [loading, setLoading] = d2(true);
+    const [error, setError] = d2(null);
+    y2(() => {
+      if (!baseUrl) {
+        setError("Missing baseUrl option");
+        setLoading(false);
+        return;
+      }
+      let cancelled = false;
+      setLoading(true);
+      Promise.all(PROJECT_PATHS.map((p3) => fetchOpenedMrsForProject(baseUrl, p3))).then((results) => {
+        if (!cancelled) {
+          setMrs(results.flat());
+          setError(null);
+        }
+      }).catch((e3) => {
+        if (!cancelled) {
+          setError(e3.message);
+        }
+      }).finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [baseUrl]);
+    return { mrs, loading, error };
+  };
+  var Table = ({ mrs }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
+    /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Project" }),
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Author" }),
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Updated" })
+    ] }) }),
+    /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => /* @__PURE__ */ u3("tr", { children: [
+      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
+        /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", style: "text-decoration:none;color:#1f78d1", children: mr.title }),
+        /* @__PURE__ */ u3("div", { style: "opacity:.6;font-size:11px", children: [
+          mr.source_branch,
+          " \u2192 ",
+          mr.target_branch
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.projectPath }),
+      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
+      /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: new Date(mr.updated_at).toLocaleString() })
+    ] }, mr.id)) })
+  ] });
+  var OverviewPage = ({ options: options2 }) => {
+    const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl);
+    const [filter, setFilter] = d2("");
+    const filtered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
+    return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
+      /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
+      /* @__PURE__ */ u3("p", { style: "max-width:780px", children: "Open merge requests for configured projects fetched directly from GitLab API." }),
+      /* @__PURE__ */ u3("div", { style: "margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap", children: [
+        /* @__PURE__ */ u3(
+          "input",
+          {
+            value: filter,
+            onInput: (e3) => setFilter(e3.target.value),
+            placeholder: "Filter MRs by title...",
+            style: "flex:1;min-width:260px;padding:6px 10px;border:1px solid #bbb;border-radius:6px;font-size:13px"
+          }
+        ),
+        /* @__PURE__ */ u3("div", { style: "font-size:12px;opacity:.7", children: [
+          filtered.length,
+          "/",
+          mrs.length,
+          " displayed"
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("div", { style: "margin-top:20px", children: [
+        loading && /* @__PURE__ */ u3("div", { style: "opacity:.7", children: "Loading merge requests\u2026" }),
+        error && !loading && /* @__PURE__ */ u3("div", { style: "color:#ec5941", children: [
+          "Failed to load: ",
+          error
+        ] }),
+        !loading && !error && !mrs.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
+        !!filtered.length && /* @__PURE__ */ u3(Table, { mrs: filtered })
+      ] }),
+      /* @__PURE__ */ u3("div", { style: "margin-top:32px;font-size:12px;opacity:.7", children: [
+        "Base URL: ",
+        options2.baseUrl
       ] })
     ] });
   };
-  var mountOverview = (container, allMr, options2) => {
-    G(/* @__PURE__ */ u2(OverviewTable, { mrs: allMr, options: options2 }), container);
+  var mountOverview = (container, options2) => {
+    G(/* @__PURE__ */ u3(OverviewPage, { options: options2 }), container);
   };
 
   // src/index.ts
@@ -419,8 +625,8 @@
   var getAllMr = async () => {
     const mergeRequests = document.querySelectorAll("li.merge-request .merge-request-title-text a");
     const mrByProject = /* @__PURE__ */ new Map();
-    for (let i3 = 0; i3 < mergeRequests.length; i3++) {
-      const href = mergeRequests[i3].getAttribute("href");
+    for (let i4 = 0; i4 < mergeRequests.length; i4++) {
+      const href = mergeRequests[i4].getAttribute("href");
       if (!href) {
         continue;
       }
@@ -436,7 +642,7 @@
   };
   var processDiscussion = async (elem, mr) => {
     const discussions = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/discussions?per_page=100`);
-    const humanDiscussions = discussions.filter((d2) => !d2.individual_note);
+    const humanDiscussions = discussions.filter((d3) => !d3.individual_note);
     if (!humanDiscussions.length) {
       elem.innerHTML += `<div class="discussion">No discussion</div>`;
       return;
@@ -461,9 +667,9 @@
       return;
     }
     const needed = options.requiredApprovals ?? 3;
-    const requiredResolvers = approval.approved_by.filter((u3) => !options.facultativeApprovers.includes(u3.user.username));
+    const requiredResolvers = approval.approved_by.filter((u4) => !options.facultativeApprovers.includes(u4.user.username));
     const allResolved = requiredResolvers.length >= needed;
-    const approvedByMe = !!approval.approved_by.find((u3) => u3.user.username === options.username);
+    const approvedByMe = !!approval.approved_by.find((u4) => u4.user.username === options.username);
     if (!allResolved) {
       if (!approvedByMe && !isMrMine(mr, options)) {
         addTag(mr, "not_approved_by_me" /* NOT_APPROVED_BY_ME */);
@@ -471,8 +677,8 @@
       addTag(mr, "missing_approvals" /* MISSING_APPROVALS */);
     }
     const color = allResolved ? colors["done" /* DONE */] : isMrMine(mr, options) || approvedByMe ? colors["wait" /* WAIT */] : colors["actions" /* ACTIONS */];
-    const allAvatars = approval.approved_by.map((u3) => `<span class="author-link has-tooltip" title="Approved by ${u3.user.name}" data-container="body" data-qa-selector="assignee_link" data-original-title="Approved by ${u3.user.name}" aria-describedby="gl-tooltip5">
-<img width="16" class="avatar avatar-inline s16 js-lazy-loaded" alt="" src="${u3.user.avatar_url}" loading="lazy" data-qa_selector="js_lazy_loaded_content">
+    const allAvatars = approval.approved_by.map((u4) => `<span class="author-link has-tooltip" title="Approved by ${u4.user.name}" data-container="body" data-qa-selector="assignee_link" data-original-title="Approved by ${u4.user.name}" aria-describedby="gl-tooltip5">
+<img width="16" class="avatar avatar-inline s16 js-lazy-loaded" alt="" src="${u4.user.avatar_url}" loading="lazy" data-qa_selector="js_lazy_loaded_content">
 </span>`).join("");
     elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${allAvatars})</div>`;
   };
@@ -526,26 +732,16 @@
       main.style.display = "none";
     }
     const page = document.createElement("div");
-    page.id = "git-buster-page";
-    page.style.minHeight = "calc(100vh - 60px)";
-    page.style.padding = "24px";
-    page.style.color = "var(--gl-text-color, #222)";
-    page.style.fontFamily = "var(--gl-font-family, system-ui, sans-serif)";
-    page.innerHTML = `<h1 style="margin-top:0;">Git Buster Overview</h1>
-    <p style="max-width:720px">Synthetic page injected by the extension. It summarizes merge requests visible on the current list.</p>
-    <div id="git-buster-overview" style="margin-top:20px;font-size:13px;line-height:18px"></div>
-    <div style="margin-top:32px;font-size:12px;opacity:.7">Base URL: ${options.baseUrl}</div>`;
+    page.id = EXT_PAGE_ID;
     const containerTarget = document.querySelector(".content-wrapper") || document.body;
     containerTarget.appendChild(page);
     try {
       const allMr = await getAllMr();
       await Promise.all(allMr.filter((mr) => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map((mr) => processMr(mr)));
-      const overviewElem = page.querySelector("#git-buster-overview");
-      mountOverview(overviewElem, allMr, options);
-    } catch (e2) {
-      const overviewElem = page.querySelector("#git-buster-overview");
-      overviewElem.innerHTML = `<div style="color:#ec5941">Failed to build overview: ${e2.message}</div>`;
-      console.error("[git-buster] overview error", e2);
+      mountOverview(page, options);
+    } catch (e3) {
+      page.innerHTML = `<div style="color:#ec5941;padding:24px;font-family:var(--gl-font-family,system-ui,sans-serif)">Failed to build overview: ${e3.message}</div>`;
+      console.error("[git-buster] overview error", e3);
     }
   };
   var updateSidebarButtonState = () => {
@@ -614,8 +810,8 @@
     item.addEventListener("mouseleave", () => {
       item.style.filter = "none";
     });
-    item.addEventListener("click", (e2) => {
-      e2.preventDefault();
+    item.addEventListener("click", (e3) => {
+      e3.preventDefault();
       syntheticPageVisible = !syntheticPageVisible;
       if (syntheticPageVisible) {
         renderSyntheticPage();
@@ -698,12 +894,12 @@
       const tag = el.tagName.toLowerCase();
       return tag === "input" || tag === "textarea" || el.isContentEditable;
     };
-    document.addEventListener("keydown", (e2) => {
-      if (e2.ctrlKey && !e2.altKey && !e2.shiftKey && e2.key.toLowerCase() === "q") {
-        if (isEditableTarget(e2.target)) {
+    document.addEventListener("keydown", (e3) => {
+      if (e3.ctrlKey && !e3.altKey && !e3.shiftKey && e3.key.toLowerCase() === "q") {
+        if (isEditableTarget(e3.target)) {
           return;
         }
-        e2.preventDefault();
+        e3.preventDefault();
         syntheticPageVisible = !syntheticPageVisible;
         if (syntheticPageVisible) {
           renderSyntheticPage();
