@@ -559,6 +559,24 @@ const init = async () => {
             updateSidebarButtonState()
         }
     })
+
+    // Keyboard shortcut (Ctrl+Q) to toggle page visibility
+    const isEditableTarget = (el: EventTarget | null): boolean => {
+        if (!(el instanceof HTMLElement)) return false
+        const tag = el.tagName.toLowerCase()
+        return tag === 'input' || tag === 'textarea' || el.isContentEditable
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'q') {
+            if (isEditableTarget(e.target)) { return }
+            e.preventDefault()
+            syntheticPageVisible = !syntheticPageVisible
+            if (syntheticPageVisible) { renderSyntheticPage() } else { removeSyntheticPage() }
+            updateUrlForVisibility()
+            updateSidebarButtonState()
+        }
+    })
 }
 
 (async () => {
