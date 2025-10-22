@@ -143,6 +143,7 @@ const colors = {
 const EXTENSION_NAME = 'git-buster'
 const EXT_PAGE_ID = 'git-buster-page'
 const EXT_SIDEBAR_BTN_ID = 'git-buster-sidebar-btn'
+const URL_ANCHOR = 'git-buster'
 let syntheticPageVisible = false
 let sidebarObserverStarted = false
 
@@ -419,6 +420,31 @@ const renderSyntheticPage = async () => {
     }
 }
 
+// Helper to update button color based on visibility
+const updateSidebarButtonState = () => {
+    const btn = document.getElementById(EXT_SIDEBAR_BTN_ID)
+    if (btn) {
+        // @ts-ignore
+        btn.style.background = syntheticPageVisible ? '#094d8b' : '#1f78d1'
+        btn.setAttribute('aria-expanded', syntheticPageVisible ? 'true' : 'false')
+    }
+}
+
+// Update URL hash to reflect current visibility
+const updateUrlForVisibility = () => {
+    const currentHash = window.location.hash.replace('#','')
+    if (syntheticPageVisible) {
+        if (currentHash !== URL_ANCHOR) {
+            // Use replaceState to avoid polluting history with toggles
+            history.replaceState(null, '', `${location.pathname}${location.search}#${URL_ANCHOR}`)
+        }
+    } else {
+        if (currentHash === URL_ANCHOR) {
+            history.replaceState(null, '', `${location.pathname}${location.search}`)
+        }
+    }
+}
+
 const ensureSidebarButton = () => {
     if (!options?.baseUrl || !document.location.href.startsWith(options.baseUrl)) { return }
     if (document.getElementById(EXT_SIDEBAR_BTN_ID)) { return }
@@ -453,8 +479,6 @@ const ensureSidebarButton = () => {
     item.title = 'Toggle Git Buster Overview'
     item.innerHTML = `<span>Git Buster</span>`
 
-    const applyStateColors = () => { item.style.background = syntheticPageVisible ? '#094d8b' : '#1f78d1' }
-
     item.addEventListener('mouseenter', () => { item.style.filter = 'brightness(1.1)' })
     item.addEventListener('mouseleave', () => { item.style.filter = 'none' })
 
@@ -462,7 +486,8 @@ const ensureSidebarButton = () => {
         e.preventDefault()
         syntheticPageVisible = !syntheticPageVisible
         if (syntheticPageVisible) { renderSyntheticPage() } else { removeSyntheticPage() }
-        applyStateColors()
+        updateUrlForVisibility()
+        updateSidebarButtonState()
     })
 
     if (mode === 'topbar') {
@@ -481,7 +506,13 @@ const ensureSidebarButton = () => {
         const insertBefore = Array.from(target.children).find(ch => ch.textContent?.match(/help|feedback/i))
         if (insertBefore) { target.insertBefore(item, insertBefore) } else { target.appendChild(item) }
     }
-    applyStateColors()
+    updateSidebarButtonState()
+
+    // Auto-open if hash already set (handles SPA navigations where init() not re-run)
+    if (!syntheticPageVisible && window.location.hash.replace('#','') === URL_ANCHOR) {
+        syntheticPageVisible = true
+        renderSyntheticPage().then(() => updateSidebarButtonState())
+    }
 }
 
 const startSidebarObserver = () => {
@@ -490,6 +521,7 @@ const startSidebarObserver = () => {
     const observer = new MutationObserver(() => {
         if (!document.getElementById(EXT_SIDEBAR_BTN_ID)) {
             ensureSidebarButton()
+            updateSidebarButtonState()
         }
     })
     observer.observe(document.body, { childList: true, subtree: true })
@@ -501,12 +533,32 @@ const init = async () => {
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
         return
     }
+
+    // Determine initial visibility from hash
+    if (window.location.hash.replace('#','') === URL_ANCHOR) {
+        syntheticPageVisible = true
+    }
+
     ensureSidebarButton()
     startSidebarObserver()
-    if (!syntheticPageVisible) {
+
+    if (syntheticPageVisible) {
+        await renderSyntheticPage()
+        updateSidebarButtonState()
+    } else {
         const allMr = await getAllMr()
         await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
     }
+
+    // Listen to hash changes (user navigation or manual edit)
+    window.addEventListener('hashchange', () => {
+        const shouldBeVisible = window.location.hash.replace('#','') === URL_ANCHOR
+        if (shouldBeVisible !== syntheticPageVisible) {
+            syntheticPageVisible = shouldBeVisible
+            if (syntheticPageVisible) { renderSyntheticPage() } else { removeSyntheticPage() }
+            updateSidebarButtonState()
+        }
+    })
 }
 
 (async () => {
