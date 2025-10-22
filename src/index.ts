@@ -383,7 +383,7 @@ const renderSyntheticPage = async () => {
     page.style.color = 'var(--gl-text-color, #222)'
     page.style.fontFamily = 'var(--gl-font-family, system-ui, sans-serif)'
     page.innerHTML = `<h1 style="margin-top:0;">Git Buster Overview</h1>
-    <p style="max-width:720px">Synthetic page injected by the extension. It summarizes merge requests visible on the current list. Click the sidebar button again to close.</p>
+    <p style="max-width:720px">Synthetic page injected by the extension. It summarizes merge requests visible on the current list.</p>
     <div id="git-buster-overview" style="margin-top:20px;font-size:13px;line-height:18px"></div>
     <div style="margin-top:32px;font-size:12px;opacity:.7">Base URL: ${options.baseUrl}</div>`
 
