@@ -556,12 +556,59 @@
     const match = title.toUpperCase().match(/([A-Z][A-Z0-9]+-\d+)/);
     return match ? match[1] : null;
   };
-  var Table = ({ mrs, filter, setFilter }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
+  var formatUpdatedAt = (iso) => {
+    const d3 = new Date(iso);
+    const pad = (n2) => String(n2).padStart(2, "0");
+    return `${d3.getFullYear()}-${pad(d3.getMonth() + 1)}-${pad(d3.getDate())} ${pad(d3.getHours())}:${pad(d3.getMinutes())}`;
+  };
+  var fetchApprovalCount = async (baseUrl, mr) => {
+    const url = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        return 0;
+      }
+      const data = await res.json();
+      return Array.isArray(data.approved_by) ? data.approved_by.length : 0;
+    } catch {
+      return 0;
+    }
+  };
+  var useApprovals = (baseUrl, mrs) => {
+    const [approvalsByMr, setApprovalsByMr] = d2({});
+    const [loading, setLoading] = d2(false);
+    y2(() => {
+      let cancelled = false;
+      if (!baseUrl || !mrs.length) {
+        setApprovalsByMr({});
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      Promise.all(mrs.map((mr) => fetchApprovalCount(baseUrl, mr).then((count) => ({ id: mr.id, count })))).then((results) => {
+        if (!cancelled) {
+          const map = {};
+          results.forEach((r3) => map[r3.id] = r3.count);
+          setApprovalsByMr(map);
+        }
+      }).finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [baseUrl, mrs]);
+    return { approvalsByMr, loading };
+  };
+  var Table = ({ mrs, filter, setFilter, approvalsByMr }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
     /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Title" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Project" }),
       /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Author" }),
-      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444", children: "Updated" })
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap", children: "Approvals" }),
+      /* @__PURE__ */ u3("th", { style: "text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap", children: "Updated" })
     ] }) }),
     /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
       const ticket = extractJiraTicket(mr.title);
@@ -575,6 +622,7 @@
         const newFilter = filter.trim().length ? `${filter.trim()} ${ticket}` : ticket;
         setFilter(newFilter);
       };
+      const approvalsCount = approvalsByMr[mr.id];
       return /* @__PURE__ */ u3("tr", { children: [
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: [
           /* @__PURE__ */ u3("div", { style: "display:flex;align-items:flex-start;gap:6px", children: [
@@ -599,7 +647,8 @@
         ] }),
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.projectPath }),
         /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: mr.author?.name }),
-        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd", children: new Date(mr.updated_at).toLocaleString() })
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px", title: "Number of approvals", children: approvalsCount ?? "\u2013" }),
+        /* @__PURE__ */ u3("td", { style: "vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px", children: formatUpdatedAt(mr.updated_at) })
       ] }, mr.id);
     }) })
   ] });
@@ -626,6 +675,7 @@
     const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? fullyFilteredAfterPersistent.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : fullyFilteredAfterPersistent;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length;
+    const { approvalsByMr, loading: approvalsLoading } = useApprovals(options2.baseUrl, fullyFiltered);
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
       /* @__PURE__ */ u3("h1", { style: "margin-top:0;", children: "Git Buster Overview" }),
       /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
@@ -665,7 +715,8 @@
           error
         ] }),
         !loading && !error && !fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "opacity:.6", children: "No opened merge requests found." }),
-        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered, filter, setFilter })
+        !!fullyFiltered.length && /* @__PURE__ */ u3(Table, { mrs: fullyFiltered, filter, setFilter, approvalsByMr }),
+        approvalsLoading && !!fullyFiltered.length && /* @__PURE__ */ u3("div", { style: "margin-top:6px;font-size:11px;opacity:.6", children: "Loading approvals\u2026" })
       ] })
     ] });
   };

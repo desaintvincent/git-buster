@@ -1,6 +1,8 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { Options, MR } from './types'
+// Add Approval import
+import type { Approval } from './types'
 
 interface OverviewProps { options: Options }
 
@@ -94,14 +96,47 @@ const extractJiraTicket = (title: string): string | null => {
   return match ? match[1] : null
 }
 
-const Table = ({ mrs, filter, setFilter }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void }) => (
+const formatUpdatedAt = (iso: string): string => {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// New fetch function for approvals count
+const fetchApprovalCount = async (baseUrl: string, mr: MR): Promise<number> => {
+  const url = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`
+  try {
+    const res = await fetch(url)
+    if (!res.ok) { return 0 }
+    const data: Approval = await res.json()
+    return Array.isArray(data.approved_by) ? data.approved_by.length : 0
+  } catch { return 0 }
+}
+
+const useApprovals = (baseUrl: string | undefined, mrs: MR[]) => {
+  const [approvalsByMr, setApprovalsByMr] = useState<Record<number, number>>({})
+  const [loading, setLoading] = useState<boolean>(false)
+  useEffect(() => {
+    let cancelled = false
+    if (!baseUrl || !mrs.length) { setApprovalsByMr({}); setLoading(false); return }
+    setLoading(true)
+    Promise.all(mrs.map(mr => fetchApprovalCount(baseUrl, mr).then(count => ({ id: mr.id, count })) ))
+      .then(results => { if (!cancelled) { const map: Record<number, number> = {}; results.forEach(r => map[r.id] = r.count); setApprovalsByMr(map) } })
+      .finally(() => { if (!cancelled) { setLoading(false) } })
+    return () => { cancelled = true }
+  }, [baseUrl, mrs])
+  return { approvalsByMr, loading }
+}
+
+const Table = ({ mrs, filter, setFilter, approvalsByMr }: { mrs: MRWithProject[]; filter: string; setFilter: (v: string) => void; approvalsByMr: Record<number, number> }) => (
   <table style="border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px">
     <thead>
     <tr>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Title</th>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Project</th>
       <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Author</th>
-      <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Updated</th>
+      <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap">Approvals</th>
+      <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444;width:1%;white-space:nowrap">Updated</th>
     </tr>
     </thead>
     <tbody>
@@ -111,10 +146,11 @@ const Table = ({ mrs, filter, setFilter }: { mrs: MRWithProject[]; filter: strin
       const addTicket = () => {
         if (!ticket) return
         const parts = filter.trim().split(/\s+/).filter(Boolean)
-        if (parts.includes(ticket)) { return } // avoid duplicate
+        if (parts.includes(ticket)) { return }
         const newFilter = filter.trim().length ? `${filter.trim()} ${ticket}` : ticket
         setFilter(newFilter)
       }
+      const approvalsCount = approvalsByMr[mr.id]
       return (
         <tr key={mr.id}>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">
@@ -127,13 +163,13 @@ const Table = ({ mrs, filter, setFilter }: { mrs: MRWithProject[]; filter: strin
                     style="border:1px solid #bbb;background:${disabled ? '#f5f5f5' : '#fff'};color:${disabled ? '#999' : '#222'};padding:2px 5px;border-radius:4px;font-size:11px;cursor:${disabled ? 'not-allowed' : 'pointer'};line-height:1;display:inline-flex;align-items:center;gap:2px"
                 >🔍</button>
               <a href={mr.web_url} target="_blank" style="text-decoration:none;color:#1f78d1;flex:1">{mr.title}</a>
-
             </div>
             <div style="opacity:.6;font-size:11px">{mr.source_branch} → {mr.target_branch}</div>
           </td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.projectPath}</td>
           <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{mr.author?.name}</td>
-          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">{new Date(mr.updated_at).toLocaleString()}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px" title="Number of approvals">{approvalsCount ?? '–'}</td>
+          <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;width:1%;white-space:nowrap;font-size:11px">{formatUpdatedAt(mr.updated_at)}</td>
         </tr>
       )
     })}
@@ -167,6 +203,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
     : fullyFilteredAfterPersistent
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
+  const { approvalsByMr, loading: approvalsLoading } = useApprovals(options.baseUrl, fullyFiltered)
 
   return (
     <div style="min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px">
@@ -191,7 +228,8 @@ const OverviewPage = ({ options }: OverviewProps) => {
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}
         {!loading && !error && !fullyFiltered.length && <div style="opacity:.6">No opened merge requests found.</div>}
-        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} />}
+        {!!fullyFiltered.length && <Table mrs={fullyFiltered} filter={filter} setFilter={setFilter} approvalsByMr={approvalsByMr} />}
+        {approvalsLoading && !!fullyFiltered.length && <div style="margin-top:6px;font-size:11px;opacity:.6">Loading approvals…</div>}
       </div>
     </div>
   )
