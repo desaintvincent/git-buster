@@ -517,11 +517,15 @@
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
-      if (!raw) return { hideDrafts: false, onlyHotfixes: false };
+      if (!raw) return { hideDrafts: false, onlyHotfixes: false, authorFilter: "all" };
       const parsed = JSON.parse(raw);
-      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes };
+      return {
+        hideDrafts: !!parsed.hideDrafts,
+        onlyHotfixes: !!parsed.onlyHotfixes,
+        authorFilter: ["all", "mine", "others"].includes(parsed.authorFilter) ? parsed.authorFilter : "all"
+      };
     } catch {
-      return { hideDrafts: false, onlyHotfixes: false };
+      return { hideDrafts: false, onlyHotfixes: false, authorFilter: "all" };
     }
   };
   var saveFilters = (f4) => {
@@ -530,7 +534,7 @@
     } catch {
     }
   };
-  var PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }) => /* @__PURE__ */ u3("div", { style: "margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px;flex-wrap:wrap", children: [
+  var PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username }) => /* @__PURE__ */ u3("div", { style: "margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px;flex-wrap:wrap", children: [
     /* @__PURE__ */ u3("label", { style: "display:flex;align-items:center;gap:6px;cursor:pointer", title: "Draft: GitLab draft/WIP flag or title starts with draft:/wip:", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
       /* @__PURE__ */ u3("span", { children: "Hide draft MRs" })
@@ -538,6 +542,14 @@
     /* @__PURE__ */ u3("label", { style: "display:flex;align-items:center;gap:6px;cursor:pointer", title: "Hotfix: targets main or master branch OR title contains \u{1F691}", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyHotfixes, onChange: (e3) => setOnlyHotfixes(e3.target.checked) }),
       /* @__PURE__ */ u3("span", { children: "Only hotfix MRs" })
+    ] }),
+    /* @__PURE__ */ u3("label", { style: "display:flex;align-items:center;gap:6px;cursor:pointer", title: "Filter by author relative to configured username", children: [
+      /* @__PURE__ */ u3("span", { children: "Author:" }),
+      /* @__PURE__ */ u3("select", { value: authorFilter, onChange: (e3) => setAuthorFilter(e3.target.value), style: "padding:4px 6px;border:1px solid #bbb;border-radius:4px;font-size:12px", children: [
+        /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+        /* @__PURE__ */ u3("option", { value: "mine", disabled: !username, children: "Mine" }),
+        /* @__PURE__ */ u3("option", { value: "others", disabled: !username, children: "Others" })
+      ] })
     ] })
   ] });
   var Table = ({ mrs }) => /* @__PURE__ */ u3("table", { style: "border-collapse:collapse;min-width:760px;width:100%;font-size:13px;line-height:18px", children: [
@@ -566,12 +578,14 @@
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
+    const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
     y2(() => {
-      saveFilters({ hideDrafts, onlyHotfixes });
-    }, [hideDrafts, onlyHotfixes]);
+      saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
+    }, [hideDrafts, onlyHotfixes, authorFilter]);
     const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
     const draftFiltered = hideDrafts ? titleFiltered.filter((mr) => !isDraftMr(mr)) : titleFiltered;
-    const fullyFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
+    const fullyFilteredBase = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
+    const fullyFiltered = authorFilter === "mine" ? fullyFilteredBase.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? fullyFilteredBase.filter((mr) => mr.author?.username !== options2.username) : fullyFilteredBase;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length;
     return /* @__PURE__ */ u3("div", { style: "min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px", children: [
@@ -597,7 +611,7 @@
           totalHotfixes
         ] })
       ] }),
-      /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }),
+      /* @__PURE__ */ u3(PersistantFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
       /* @__PURE__ */ u3("div", { style: "margin-top:20px", children: [
         loading && /* @__PURE__ */ u3("div", { style: "opacity:.7", children: "Loading merge requests\u2026" }),
         error && !loading && /* @__PURE__ */ u3("div", { style: "color:#ec5941", children: [

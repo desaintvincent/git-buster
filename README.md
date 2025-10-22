@@ -36,7 +36,7 @@ Clicking the button toggles a synthetic overview page that replaces the main con
 - A table of the currently listed merge requests
 - Calculated tags and their badges
 - A consolidated badge per MR
-- Persistent local filters: "Hide draft MRs" and "Only hotfix MRs"
+- Persistent local filters: "Hide draft MRs", "Only hotfix MRs", and Author scope (All / Mine / Others)
 
 Hotfix definition (overview page filter):
 - Targets `main` or `master` branch OR
@@ -51,6 +51,7 @@ Edge cases & notes:
 - Draft MRs and old MRs are filtered out according to your settings (`skipDrafts`, `ignoreAfterMonth`).
 - The page is purely client-side; no additional permissions were added beyond existing API calls.
 - Hotfix filter persists between page loads using `localStorage`.
+- Author filter persists between page loads. "Mine" / "Others" are disabled if no `username` is configured.
 
 Configuration reminders (via the popup/options):
 - `enable`: master switch

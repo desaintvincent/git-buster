@@ -53,18 +53,22 @@ const isHotfixMr = (mr: MR): boolean => {
 }
 // Persistent filters localStorage helpers
 const LS_FILTER_KEY = 'gb_persistent_filters'
-interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; authorFilter: 'all' | 'mine' | 'others' }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false, onlyHotfixes: false }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false, authorFilter: 'all' }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes }
-  } catch { return { hideDrafts: false, onlyHotfixes: false } }
+    return {
+      hideDrafts: !!parsed.hideDrafts,
+      onlyHotfixes: !!parsed.onlyHotfixes,
+      authorFilter: ['all','mine','others'].includes(parsed.authorFilter) ? parsed.authorFilter : 'all'
+    }
+  } catch { return { hideDrafts: false, onlyHotfixes: false, authorFilter: 'all' } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
-const PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }: { hideDrafts: boolean; setHideDrafts: (v: boolean) => void; onlyHotfixes: boolean; setOnlyHotfixes: (v: boolean) => void }) => (
+const PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username }: { hideDrafts: boolean; setHideDrafts: (v: boolean) => void; onlyHotfixes: boolean; setOnlyHotfixes: (v: boolean) => void; authorFilter: 'all' | 'mine' | 'others'; setAuthorFilter: (v: 'all' | 'mine' | 'others') => void; username?: string }) => (
   <div style="margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px;flex-wrap:wrap">
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Draft: GitLab draft/WIP flag or title starts with draft:/wip:">
       <input type="checkbox" checked={hideDrafts} onChange={e => setHideDrafts((e.target as HTMLInputElement).checked)} />
@@ -73,6 +77,14 @@ const PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyH
     <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Hotfix: targets main or master branch OR title contains 🚑">
       <input type="checkbox" checked={onlyHotfixes} onChange={e => setOnlyHotfixes((e.target as HTMLInputElement).checked)} />
       <span>Only hotfix MRs</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Filter by author relative to configured username">
+      <span>Author:</span>
+      <select value={authorFilter} onChange={e => setAuthorFilter((e.target as HTMLSelectElement).value as 'all' | 'mine' | 'others')} style="padding:4px 6px;border:1px solid #bbb;border-radius:4px;font-size:12px">
+        <option value="all">All</option>
+        <option value="mine" disabled={!username}>Mine</option>
+        <option value="others" disabled={!username}>Others</option>
+      </select>
     </label>
   </div>
 )
@@ -108,10 +120,16 @@ const OverviewPage = ({ options }: OverviewProps) => {
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
-  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes }) }, [hideDrafts, onlyHotfixes])
+  const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'others'>(() => loadFilters().authorFilter)
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, authorFilter }) }, [hideDrafts, onlyHotfixes, authorFilter])
   const titleFiltered = filter.trim() ? mrs.filter(mr => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs
   const draftFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
-  const fullyFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
+  const fullyFilteredBase = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
+  const fullyFiltered = authorFilter === 'mine'
+    ? fullyFilteredBase.filter(mr => mr.author?.username === options.username)
+    : authorFilter === 'others'
+      ? fullyFilteredBase.filter(mr => mr.author?.username !== options.username)
+      : fullyFilteredBase
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
 
@@ -128,7 +146,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
         />
         <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
       </div>
-      <PersistantFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} />
+      <PersistantFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} authorFilter={authorFilter} setAuthorFilter={setAuthorFilter} username={options.username} />
       <div style="margin-top:20px">
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}
