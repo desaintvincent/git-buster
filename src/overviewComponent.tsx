@@ -44,26 +44,35 @@ const useProjectMergeRequests = (baseUrl?: string) => {
 
 const isDraftMr = (mr: MR): boolean => {
   const title = mr.title.toLowerCase()
-  return !!mr.draft || !!mr.work_in_progress || title.startsWith('draft:') || title.startsWith('wip:')
+  return mr.draft || mr.work_in_progress || title.startsWith('draft:') || title.startsWith('wip:')
+}
+// New helper: hotfix if targeting main/master or has 🚑 in title
+const isHotfixMr = (mr: MR): boolean => {
+  const target = mr.target_branch.toLowerCase()
+  return target === 'main' || target === 'master' || mr.title.includes('🚑')
 }
 // Persistent filters localStorage helpers
 const LS_FILTER_KEY = 'gb_persistent_filters'
-interface PersistFilters { hideDrafts: boolean }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts }
-  } catch { return { hideDrafts: false } }
+    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes }
+  } catch { return { hideDrafts: false, onlyHotfixes: false } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
-const PersistantFilterBar = ({ hideDrafts, setHideDrafts }: { hideDrafts: boolean; setHideDrafts: (v: boolean) => void }) => (
-  <div style="margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px">
-    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+const PersistantFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }: { hideDrafts: boolean; setHideDrafts: (v: boolean) => void; onlyHotfixes: boolean; setOnlyHotfixes: (v: boolean) => void }) => (
+  <div style="margin-top:10px;padding:8px 12px;border:1px solid #ccc;border-radius:6px;display:flex;gap:18px;align-items:center;font-size:12px;flex-wrap:wrap">
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Draft: GitLab draft/WIP flag or title starts with draft:/wip:">
       <input type="checkbox" checked={hideDrafts} onChange={e => setHideDrafts((e.target as HTMLInputElement).checked)} />
       <span>Hide draft MRs</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:6px;cursor:pointer" title="Hotfix: targets main or master branch OR title contains 🚑">
+      <input type="checkbox" checked={onlyHotfixes} onChange={e => setOnlyHotfixes((e.target as HTMLInputElement).checked)} />
+      <span>Only hotfix MRs</span>
     </label>
   </div>
 )
@@ -98,9 +107,13 @@ const OverviewPage = ({ options }: OverviewProps) => {
   const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl)
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
-  useEffect(() => { saveFilters({ hideDrafts }) }, [hideDrafts])
+  const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes }) }, [hideDrafts, onlyHotfixes])
   const titleFiltered = filter.trim() ? mrs.filter(mr => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs
-  const fullyFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
+  const draftFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
+  const fullyFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
+  const totalHotfixes = mrs.filter(isHotfixMr).length
+  const displayedHotfixes = fullyFiltered.filter(isHotfixMr).length
 
   return (
     <div style="min-height:calc(100vh - 60px);padding:24px;color:var(--gl-text-color,#222);font-family:var(--gl-font-family,system-ui,sans-serif);max-width:1100px">
@@ -113,9 +126,9 @@ const OverviewPage = ({ options }: OverviewProps) => {
           placeholder="Filter MRs by title..."
           style="flex:1;min-width:260px;padding:6px 10px;border:1px solid #bbb;border-radius:6px;font-size:13px"
         />
-        <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed</div>
+        <div style="font-size:12px;opacity:.7">{fullyFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
       </div>
-      <PersistantFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} />
+      <PersistantFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} />
       <div style="margin-top:20px">
         {loading && <div style="opacity:.7">Loading merge requests…</div>}
         {error && !loading && <div style="color:#ec5941">Failed to load: {error}</div>}

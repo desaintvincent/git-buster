@@ -36,6 +36,13 @@ Clicking the button toggles a synthetic overview page that replaces the main con
 - A table of the currently listed merge requests
 - Calculated tags and their badges
 - A consolidated badge per MR
+- Persistent local filters: "Hide draft MRs" and "Only hotfix MRs"
+
+Hotfix definition (overview page filter):
+- Targets `main` or `master` branch OR
+- Title contains the ambulance emoji 🚑
+
+The overview header shows both total and currently displayed hotfix counts (Hotfixes: displayed/total). Hover the "Only hotfix MRs" checkbox to read the tooltip summarizing the definition.
 
 Click the button again to return to the normal GitLab view.
 
@@ -43,6 +50,7 @@ Edge cases & notes:
 - The button reappears automatically after GitLab SPA navigations if it's removed.
 - Draft MRs and old MRs are filtered out according to your settings (`skipDrafts`, `ignoreAfterMonth`).
 - The page is purely client-side; no additional permissions were added beyond existing API calls.
+- Hotfix filter persists between page loads using `localStorage`.
 
 Configuration reminders (via the popup/options):
 - `enable`: master switch
