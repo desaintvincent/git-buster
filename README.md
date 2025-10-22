@@ -28,3 +28,24 @@ Add informations on the gitlab MR list
 | NOT_APPROVED_BY_ME       	 | ACTIONS 	 |
 | MISSING_APPROVALS        	 | WAIT    	 |
 | NEED_REBASE              	 | WAIT    	 |
+
+## Synthetic Overview Page
+A new sidebar button "Git Buster" is injected into the GitLab sidebar (super-sidebar or legacy) whenever you browse a URL that starts with your configured `baseUrl` and the extension is enabled.
+
+Clicking the button toggles a synthetic overview page that replaces the main content area and shows:
+- A table of the currently listed merge requests
+- Calculated tags and their badges
+- A consolidated badge per MR
+
+Click the button again to return to the normal GitLab view.
+
+Edge cases & notes:
+- The button reappears automatically after GitLab SPA navigations if it's removed.
+- Draft MRs and old MRs are filtered out according to your settings (`skipDrafts`, `ignoreAfterMonth`).
+- The page is purely client-side; no additional permissions were added beyond existing API calls.
+
+Configuration reminders (via the popup/options):
+- `enable`: master switch
+- `baseUrl`: your GitLab base (e.g. https://gitlab.example.com)
+- `username`: used to decide which MRs are yours
+- `skipDrafts`, `ignoreAfterMonth`, `requiredApprovals`, `facultativeApprovers`

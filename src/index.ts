@@ -1,3 +1,4 @@
+/// <reference types="chrome" />
 // This script gets injected into any opened page
 // whose URL matches the pattern defined in the manifest
 // (see "content_script" key).
@@ -140,16 +141,20 @@ const colors = {
 };
 
 const EXTENSION_NAME = 'git-buster'
+const EXT_PAGE_ID = 'git-buster-page'
+const EXT_SIDEBAR_BTN_ID = 'git-buster-sidebar-btn'
+let syntheticPageVisible = false
+let sidebarObserverStarted = false
 
 const loadOptions = async (): Promise<Options> => {
     // @ts-ignore
     const options = await chrome.storage.sync.get([EXTENSION_NAME])
 
-    const scoppedOptions = options[EXTENSION_NAME]
+    const scoppedOptions = options[EXTENSION_NAME] ?? {}
 
     return {
         ...scoppedOptions,
-        facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(','),
+        facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(',').filter(Boolean),
     }
 
 }
@@ -174,10 +179,14 @@ const capitalizeFirstLetter = (str: string): string => {
 }
 
 const displayBadge = (tag: TAG, isMine: boolean): string => {
-
     const badge = getBadge(isMine, [tag])
-    const badgeColor = colors[badge]
-    return `<span style="border: 1px solid black; padding: 0 8px; border-radius: 50px; background-color: ${badgeColor}; color: black">${capitalizeFirstLetter(tag).replace(/_/g, ' ')}</span>`
+    const classMap: Record<BADGE, string> = {
+        [BADGE.ACTIONS]: 'gb-tag-actions',
+        [BADGE.WAIT]: 'gb-tag-wait',
+        [BADGE.DONE]: 'gb-tag-done',
+        [BADGE.NEUTRAL]: 'gb-tag-neutral'
+    }
+    return `<span class="gb-tag ${classMap[badge]}">${capitalizeFirstLetter(tag).replace(/_/g, ' ')}</span>`
 }
 
 const setBadge = (mr: MR) => {
@@ -350,13 +359,154 @@ const isOld = (mr: MR, ignoreAfterMonth?: number): boolean => {
     return monthDiff > ignoreAfterMonth
 }
 
+const getMainContentContainer = (): HTMLElement | null => {
+    return document.querySelector('#content-body') as HTMLElement || document.querySelector('main') as HTMLElement || document.querySelector('.content-wrapper') as HTMLElement
+}
+
+const removeSyntheticPage = () => {
+    const page = document.getElementById('git-buster-page')
+    if (page) { page.remove() }
+    const main = getMainContentContainer()
+    if (main) { main.style.display = '' }
+}
+
+const renderSyntheticPage = async () => {
+    removeSyntheticPage()
+    const main = getMainContentContainer()
+    if (main) { main.style.display = 'none' }
+
+    const page = document.createElement('div')
+    page.id = 'git-buster-page'
+    page.style.minHeight = 'calc(100vh - 60px)'
+    page.style.padding = '24px'
+    page.style.color = 'var(--gl-text-color, #222)'
+    page.style.fontFamily = 'var(--gl-font-family, system-ui, sans-serif)'
+    page.innerHTML = `<h1 style="margin-top:0;">Git Buster Overview</h1>
+    <p style="max-width:720px">Synthetic page injected by the extension. It summarizes merge requests visible on the current list. Click the sidebar button again to close.</p>
+    <div id="git-buster-overview" style="margin-top:20px;font-size:13px;line-height:18px"></div>
+    <div style="margin-top:32px;font-size:12px;opacity:.7">Base URL: ${options.baseUrl}</div>`
+
+    const containerTarget = document.querySelector('.content-wrapper') || document.body
+    containerTarget.appendChild(page)
+
+    try {
+        const allMr = await getAllMr()
+        await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
+        const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
+        const rows = allMr.map(mr => {
+            const tags = getTags(mr)
+            const badge = getBadge(isMrMine(mr), tags)
+            return `<tr>
+                <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd"><a href="${mr.web_url}" target="_blank" style="text-decoration:none;color:#1f78d1">${mr.title.replace(/</g,'&lt;')}</a><div style="opacity:.6;font-size:11px">${mr.source_branch} → ${mr.target_branch}</div></td>
+                <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">${mr.author?.name}</td>
+                <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd">${tags.map(t => displayBadge(t, isMrMine(mr))).join('') || displayBadge(TAG.CAN_BE_MERGED, isMrMine(mr))}</td>
+                <td style="vertical-align:top;padding:4px 8px;border-top:1px solid #ddd;"><span style="background:${colors[badge]};padding:2px 6px;border-radius:4px;border:1px solid #000;">${badge}</span></td>
+            </tr>`
+        }).join('')
+        overviewElem.innerHTML = `<table style="border-collapse:collapse;min-width:680px;width:100%">
+            <thead><tr>
+                <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Title</th>
+                <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Author</th>
+                <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Tags</th>
+                <th style="text-align:left;padding:6px 8px;border-bottom:2px solid #444">Badge</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`
+    } catch (e) {
+        const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
+        overviewElem.innerHTML = `<div style="color:#ec5941">Failed to build overview: ${(e as Error).message}</div>`
+        console.error('[git-buster] overview error', e)
+    }
+}
+
+const ensureSidebarButton = () => {
+    if (!options?.baseUrl || !document.location.href.startsWith(options.baseUrl)) { return }
+    if (document.getElementById(EXT_SIDEBAR_BTN_ID)) { return }
+
+    const topBarContainer = document.querySelector('.top-bar-container')
+    const sidebarContainer = document.querySelector('.super-sidebar-nav') || document.querySelector('.nav-sidebar') || document.querySelector('.sidebar') || document.querySelector('.layout-page .aside');
+
+    let target: Element | null = null
+    let mode: 'topbar' | 'sidebar' = 'sidebar'
+    if (topBarContainer) { target = topBarContainer; mode = 'topbar' } else if (sidebarContainer) { target = sidebarContainer }
+    if (!target) { return }
+
+    const item = document.createElement('button')
+    item.type = 'button'
+    item.id = EXT_SIDEBAR_BTN_ID
+    item.style.cursor = 'pointer'
+    item.style.display = 'flex'
+    item.style.alignItems = 'center'
+    item.style.gap = '6px'
+    item.style.padding = mode === 'topbar' ? '4px 12px' : '6px 10px'
+    item.style.margin = mode === 'topbar' ? '0 0 0 auto' : '4px 8px'
+    item.style.borderRadius = '6px'
+    item.style.fontSize = '13px'
+    item.style.lineHeight = '18px'
+    item.style.fontWeight = '500'
+    item.style.background = '#1f78d1'
+    item.style.color = '#fff'
+    item.style.border = '1px solid rgba(255,255,255,0.18)'
+    item.style.boxShadow = 'inset 0 0 0 1px rgba(255,255,255,0.15)'
+    item.style.userSelect = 'none'
+    item.style.whiteSpace = 'nowrap'
+    item.title = 'Toggle Git Buster Overview'
+    item.innerHTML = `<span>Git Buster</span>`
+
+    const applyStateColors = () => { item.style.background = syntheticPageVisible ? '#094d8b' : '#1f78d1' }
+
+    item.addEventListener('mouseenter', () => { item.style.filter = 'brightness(1.1)' })
+    item.addEventListener('mouseleave', () => { item.style.filter = 'none' })
+
+    item.addEventListener('click', e => {
+        e.preventDefault()
+        syntheticPageVisible = !syntheticPageVisible
+        if (syntheticPageVisible) { renderSyntheticPage() } else { removeSyntheticPage() }
+        applyStateColors()
+    })
+
+    if (mode === 'topbar') {
+        const parentIsFlex = getComputedStyle(target).display.includes('flex')
+        if (parentIsFlex) {
+            item.style.marginLeft = 'auto'
+            target.appendChild(item)
+        } else {
+            const wrapper = document.createElement('div')
+            wrapper.style.display = 'flex'
+            wrapper.style.marginLeft = 'auto'
+            wrapper.appendChild(item)
+            target.appendChild(wrapper)
+        }
+    } else {
+        const insertBefore = Array.from(target.children).find(ch => ch.textContent?.match(/help|feedback/i))
+        if (insertBefore) { target.insertBefore(item, insertBefore) } else { target.appendChild(item) }
+    }
+    applyStateColors()
+}
+
+const startSidebarObserver = () => {
+    if (sidebarObserverStarted) { return }
+    sidebarObserverStarted = true
+    const observer = new MutationObserver(() => {
+        if (!document.getElementById(EXT_SIDEBAR_BTN_ID)) {
+            ensureSidebarButton()
+        }
+    })
+    observer.observe(document.body, { childList: true, subtree: true })
+}
+
+// Adjust init: remove loadPersistedVisibility/attachGlobalListeners
 const init = async () => {
     options = await loadOptions();
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
         return
     }
-    const allMr = await getAllMr()
-    await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
+    ensureSidebarButton()
+    startSidebarObserver()
+    if (!syntheticPageVisible) {
+        const allMr = await getAllMr()
+        await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
+    }
 }
 
 (async () => {
