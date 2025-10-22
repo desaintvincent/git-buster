@@ -6,7 +6,7 @@
 // and injected into the same or different pages.
 
 import { Options, MR, Approval, BADGE, TAG, colors, getBadge, displayBadge, addTag, getTags, isMrMine } from './types'
-import { buildOverviewContent } from './overview'
+import { mountOverview } from './overviewComponent'
 
 let options: Options
 
@@ -207,7 +207,7 @@ const renderSyntheticPage = async () => {
     if (main) { main.style.display = 'none' }
 
     const page = document.createElement('div')
-    page.id = EXT_PAGE_ID
+    page.id = 'git-buster-page'
     page.style.minHeight = 'calc(100vh - 60px)'
     page.style.padding = '24px'
     page.style.color = 'var(--gl-text-color, #222)'
@@ -224,7 +224,7 @@ const renderSyntheticPage = async () => {
         const allMr = await getAllMr()
         await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
         const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
-        overviewElem.innerHTML = buildOverviewContent(allMr, options)
+        mountOverview(overviewElem, allMr, options)
     } catch (e) {
         const overviewElem = page.querySelector('#git-buster-overview') as HTMLElement
         overviewElem.innerHTML = `<div style="color:#ec5941">Failed to build overview: ${(e as Error).message}</div>`
