@@ -401,7 +401,7 @@
   }
 
   // src/components/PersistentFilterBar.tsx
-  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3("label", { title: "Draft: GitLab draft/WIP flag or title starts with draft:/wip:", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
       " Hide draft MRs"
@@ -409,6 +409,10 @@
     /* @__PURE__ */ u3("label", { title: "Hotfix: targets main or master branch OR title contains \u{1F691}", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyHotfixes, onChange: (e3) => setOnlyHotfixes(e3.target.checked) }),
       " Only hotfix MRs"
+    ] }),
+    /* @__PURE__ */ u3("label", { title: "Group rows by first JIRA-like ticket (ABC-123) in title", className: "gb-filter-item", children: [
+      /* @__PURE__ */ u3("input", { type: "checkbox", checked: groupByTicket, onChange: (e3) => setGroupByTicket(e3.target.checked) }),
+      " Group by ticket"
     ] })
   ] });
 
@@ -489,7 +493,56 @@
   };
 
   // src/components/MergeRequestsTable.tsx
-  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }) => {
+  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket }) => {
+    if (!groupByTicket) {
+      return /* @__PURE__ */ u3("table", { className: "gb-table", children: [
+        /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
+          /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Updated" })
+        ] }) }),
+        /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
+          const ticket = extractJiraTicket(mr.title);
+          const disabled = !ticket;
+          const addTicket = () => {
+            if (!ticket) return;
+            const parts = filter.trim().split(/\s+/).filter(Boolean);
+            if (parts.includes(ticket)) return;
+            setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket);
+          };
+          const approvalsUsers = approvalsUsersByMr[mr.id] || [];
+          const reviewersUsers = reviewersUsersByMr[mr.id] || [];
+          return /* @__PURE__ */ u3("tr", { children: [
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
+              /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
+                /* @__PURE__ */ u3("span", { className: "gb-mr-iid", children: [
+                  "!",
+                  mr.iid
+                ] }),
+                isDraftMr(mr) && /* @__PURE__ */ u3("span", { className: "gb-mr-draft", children: "Draft:" }),
+                /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
+              ] }),
+              /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
+                /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
+                  mr.source_branch,
+                  " \u2192 ",
+                  mr.target_branch
+                ] })
+              ] })
+            ] }) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: formatUpdatedAt(mr.updated_at) })
+          ] }, mr.id);
+        }) })
+      ] });
+    }
     const groupMap = /* @__PURE__ */ new Map();
     for (const mr of mrs) {
       const ticket = extractJiraTicket(mr.title);
@@ -791,11 +844,11 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
-      if (!raw) return { hideDrafts: false, onlyHotfixes: false };
+      if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false };
       const parsed = JSON.parse(raw);
-      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes };
+      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket };
     } catch {
-      return { hideDrafts: false, onlyHotfixes: false };
+      return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false };
     }
   };
   var saveFilters = (f4) => {
@@ -834,11 +887,12 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
+    const [groupByTicket, setGroupByTicket] = d2(() => loadFilters().groupByTicket);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     y2(() => {
-      saveFilters({ hideDrafts, onlyHotfixes });
-    }, [hideDrafts, onlyHotfixes]);
+      saveFilters({ hideDrafts, onlyHotfixes, groupByTicket });
+    }, [hideDrafts, onlyHotfixes, groupByTicket]);
     usePageTitle(visible ? "Git Buster Overview" : document.title);
     y2(() => {
       const main = document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
@@ -885,7 +939,7 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
-      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }),
+      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username: options2.username, disabled: false }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
@@ -907,7 +961,7 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
           error
         ] }),
         !loading && !error && !authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
-        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }),
+        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket }),
         reviewMetaLoading && !!authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });

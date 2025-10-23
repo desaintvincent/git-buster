@@ -15,14 +15,14 @@ interface OverviewProps { options: Options; initialVisible: boolean }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
 const LS_PROJECT_GROUP_KEY = 'gb_project_group'
-interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false, onlyHotfixes: false }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes }
-  } catch { return { hideDrafts: false, onlyHotfixes: false } }
+    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket }
+  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
@@ -42,9 +42,10 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
+  const [groupByTicket, setGroupByTicket] = useState<boolean>(() => loadFilters().groupByTicket)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
-  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes }) }, [hideDrafts, onlyHotfixes])
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket }) }, [hideDrafts, onlyHotfixes, groupByTicket])
 
   // Page title only while visible
   usePageTitle(visible ? 'Git Buster Overview' : document.title)
@@ -107,7 +108,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
           </select>
         </label>
       </div>
-      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} />
+      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} username={options.username} disabled={false} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
@@ -118,7 +119,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         {loading && <div className="gb-sub">Loading merge requests…</div>}
         {error && !loading && <div className="gb-error">Failed to load: {error}</div>}
         {!loading && !error && !authorFiltered.length && <div className="gb-sub">No opened merge requests found.</div>}
-        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} />}
+        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} groupByTicket={groupByTicket} />}
         {reviewMetaLoading && !!authorFiltered.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
       </div>
     </div>
