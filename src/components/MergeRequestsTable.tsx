@@ -37,7 +37,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 <div className="gb-mr-title-line">
                   <span className="gb-mr-iid">!{mr.iid}</span>
                   {isDraftMr(mr) && <span className="gb-mr-draft">Draft:</span>}
-                  <a href={mr.web_url} target="_blank" className="gb-mr-link">{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
+                  <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
                 </div>
                 <div className="gb-mr-meta-line">
                   <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>

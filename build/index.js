@@ -1,60 +1,10 @@
 "use strict";
 (() => {
   // src/types.ts
-  var tagToBadgeForMe = {
-    ["discussions_not_resolved" /* DISCUSSIONS_NOT_RESOLVED */]: "actions" /* ACTIONS */,
-    ["ci_unsuccessful" /* CI_UNSUCCESSFUL */]: "actions" /* ACTIONS */,
-    ["need_rebase" /* NEED_REBASE */]: "actions" /* ACTIONS */,
-    ["missing_approvals" /* MISSING_APPROVALS */]: "wait" /* WAIT */,
-    ["not_approved_by_me" /* NOT_APPROVED_BY_ME */]: "neutral" /* NEUTRAL */,
-    ["can_be_merged" /* CAN_BE_MERGED */]: "done" /* DONE */
-  };
-  var tagToBadgeForOthers = {
-    ["ci_unsuccessful" /* CI_UNSUCCESSFUL */]: "wait" /* WAIT */,
-    ["discussions_not_resolved" /* DISCUSSIONS_NOT_RESOLVED */]: "wait" /* WAIT */,
-    ["not_approved_by_me" /* NOT_APPROVED_BY_ME */]: "actions" /* ACTIONS */,
-    ["missing_approvals" /* MISSING_APPROVALS */]: "wait" /* WAIT */,
-    ["need_rebase" /* NEED_REBASE */]: "wait" /* WAIT */,
-    ["can_be_merged" /* CAN_BE_MERGED */]: "done" /* DONE */
-  };
-  var colors = {
-    ["actions" /* ACTIONS */]: "#ec5941",
-    ["wait" /* WAIT */]: "#c17d10",
-    ["done" /* DONE */]: "#2da160",
-    ["neutral" /* NEUTRAL */]: "white"
-  };
-  var getBadge = (isMine, tags) => {
-    if (!tags.length) {
-      return "done" /* DONE */;
-    }
-    const mapping = isMine ? tagToBadgeForMe : tagToBadgeForOthers;
-    for (const [tag, badge] of Object.entries(mapping)) {
-      if (tags.includes(tag)) {
-        return badge;
-      }
-    }
-    return "neutral" /* NEUTRAL */;
-  };
-  var capitalizeFirstLetter = (str) => str.charAt(0).toUpperCase() + str.slice(1);
-  var displayBadge = (tag, isMine) => {
-    const badge = getBadge(isMine, [tag]);
-    const classMap = {
-      ["actions" /* ACTIONS */]: "gb-tag-actions",
-      ["wait" /* WAIT */]: "gb-tag-wait",
-      ["done" /* DONE */]: "gb-tag-done",
-      ["neutral" /* NEUTRAL */]: "gb-tag-neutral"
-    };
-    return `<span class="gb-tag ${classMap[badge]}">${capitalizeFirstLetter(tag).replace(/_/g, " ")}</span>`;
-  };
-  var isMrMine = (mr, options2) => mr.assignee?.username === options2.username;
-  var tagsByMr = {};
-  var addTag = (mr, tag) => {
-    if (!(mr.id in tagsByMr)) {
-      tagsByMr[mr.id] = [];
-    }
-    tagsByMr[mr.id].push(tag);
-  };
-  var getTags = (mr) => tagsByMr[mr.id] ?? [];
+  var PROJECTS = [
+    { name: "sywa", projects: ["sywa/sywa/frontend", "sywa/sywa/backend", "sywa/sywa/sywatt", "sywa/sywa/sywack"] },
+    { name: "slip", projects: ["slip/mono-slip"] }
+  ];
 
   // node_modules/preact/dist/preact.module.js
   var n;
@@ -502,7 +452,7 @@
       setSelectedAuthor(username);
       setOpen(false);
     };
-    return /* @__PURE__ */ u3("div", { className: "gb-ephemeral-wrapper", children: /* @__PURE__ */ u3("div", { className: "gb-ephemeral-inner", children: /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", children: /* @__PURE__ */ u3("div", { className: "gb-select", children: [
+    return /* @__PURE__ */ u3("div", { className: "gb-select", children: [
       /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), title: disabled ? "Disabled when author scope is Mine" : "", children: [
         current ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }),
         /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? current.username : "" })
@@ -515,7 +465,7 @@
         ] }, a3.id)),
         !uniqueAuthors.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No authors" })
       ] })
-    ] }) }) }) });
+    ] });
   };
 
   // src/components/NonPersistantFilter.tsx
@@ -581,7 +531,7 @@
               mr.iid
             ] }),
             isDraftMr(mr) && /* @__PURE__ */ u3("span", { className: "gb-mr-draft", children: "Draft:" }),
-            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
+            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
           ] }),
           /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
             /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
@@ -602,10 +552,6 @@
   ] });
 
   // src/hooks/useProjectMergeRequests.ts
-  var PROJECTS = [
-    { name: "sywa", projects: ["sywa/sywa/frontend", "sywa/sywa/backend", "sywa/sywa/sywatt", "sywa/sywa/sywack"] },
-    { name: "slip", projects: ["slip/mono-slip"] }
-  ];
   var fetchOpenedMrsForProject = async (baseUrl, projectPath) => {
     const encoded = encodeURIComponent(projectPath);
     const url = `${baseUrl}/api/v4/projects/${encoded}/merge_requests?state=opened&per_page=100`;
@@ -616,7 +562,7 @@
     const data = await res.json();
     return data.map((mr) => ({ ...mr, projectPath }));
   };
-  var useProjectMergeRequests = (baseUrl, groupName) => {
+  var useProjectMergeRequests = (baseUrl, projectGroups, groupName) => {
     const [mrs, setMrs] = d2([]);
     const [loading, setLoading] = d2(true);
     const [error, setError] = d2(null);
@@ -628,7 +574,8 @@
       }
       let cancelled = false;
       setLoading(true);
-      const group = PROJECTS.find((g2) => g2.name === groupName) || PROJECTS[0];
+      const groups = projectGroups && projectGroups.length ? projectGroups : PROJECTS;
+      const group = groups.find((g2) => g2.name === groupName) || groups[0];
       const paths = group?.projects || [];
       Promise.all(paths.map((p3) => fetchOpenedMrsForProject(baseUrl, p3))).then((results) => {
         if (!cancelled) {
@@ -647,7 +594,7 @@
       return () => {
         cancelled = true;
       };
-    }, [baseUrl, groupName]);
+    }, [baseUrl, projectGroups, groupName]);
     return { mrs, loading, error };
   };
 
@@ -770,7 +717,7 @@
 .gb-link { text-decoration:none; color:#1f78d1; font-weight:600; font-size:14px; line-height:20px; }
 .gb-link:hover { text-decoration:underline; }
 .gb-select { position:relative; display:inline-block; }
-.gb-select-trigger { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.gb-select-trigger { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:6px; color:#fff; }
 .gb-select-trigger.disabled { cursor:not-allowed; opacity:.5; }
 .gb-select-menu { position:absolute; top:100%; left:0; background:#333238; border:1px solid #bbb; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,.15); width:220px; padding:4px 0; z-index:999; max-height:260px; overflow:auto; }
 .gb-select-item { display:flex; align-items:center; gap:6px; padding:6px 10px; font-size:12px; cursor:pointer; }
@@ -787,7 +734,7 @@
 .gb-mt6 { margin-top:6px; }
 .gb-mr-title-block { display:flex; flex-direction:column; gap:2px; }
 .gb-mr-title-line { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.gb-mr-link { text-decoration:none; color:#1f78d1; font-weight:500; font-size:14px; line-height:20px; }
+.gb-mr-link { text-decoration:none; color:#1f78d1; font-weight:600; font-size:15px; line-height:22px; }
 .gb-mr-link:hover { text-decoration:underline; color:#1f78d1; }
 .gb-mr-draft { background:none; padding:0; border-radius:0; color:#c17d10; font-weight:600; font-size:12px; }
 .gb-mr-meta-line { display:flex; align-items:center; gap:8px; font-size:11px; color:#6b6b6b; }
@@ -835,20 +782,17 @@
   };
   var OverviewPage = ({ options: options2 }) => {
     usePageTitle("Git Buster Overview");
+    const groups = options2.projects && options2.projects.length ? options2.projects : PROJECTS;
     const initialGroup = (() => {
       try {
         const v3 = localStorage.getItem(LS_PROJECT_GROUP_KEY);
-        return PROJECTS.find((g2) => g2.name === v3)?.name || PROJECTS[0].name;
+        return groups.find((g2) => g2.name === v3)?.name || groups[0].name;
       } catch {
-        return PROJECTS[0].name;
+        return groups[0].name;
       }
     })();
     const [projectGroup, setProjectGroup] = d2(initialGroup);
-    const initialSelectedProject = (() => {
-      const group = PROJECTS.find((g2) => g2.name === initialGroup) || PROJECTS[0];
-      return group.projects[0]?.split("/").slice(-1)[0] || null;
-    })();
-    const [selectedProject, setSelectedProject] = d2(initialSelectedProject);
+    const [selectedProject, setSelectedProject] = d2(null);
     y2(() => {
       try {
         localStorage.setItem(LS_PROJECT_GROUP_KEY, projectGroup);
@@ -856,15 +800,9 @@
       }
     }, [projectGroup]);
     y2(() => {
-      const group = PROJECTS.find((g2) => g2.name === projectGroup);
-      if (group && group.projects.length) {
-        const firstShort = group.projects[0].split("/").slice(-1)[0];
-        setSelectedProject(firstShort);
-      } else {
-        setSelectedProject(null);
-      }
-    }, [projectGroup]);
-    const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl, projectGroup);
+      setSelectedProject(null);
+    }, [projectGroup, groups]);
+    const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl, groups, projectGroup);
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
@@ -896,7 +834,7 @@
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
       /* @__PURE__ */ u3("div", { className: "gb-header-row", children: [
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
-        /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: PROJECTS.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
+        /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
@@ -959,135 +897,8 @@
     const scoppedOptions = options2[EXTENSION_NAME] ?? {};
     return {
       ...scoppedOptions,
-      facultativeApprovers: (scoppedOptions.facultativeApprovers ?? "").split(",").filter(Boolean)
+      projects: PROJECTS
     };
-  };
-  var setBadge = (mr) => {
-    const issueElem = document.getElementById(`merge_request_${mr.id}`);
-    if (!issueElem) {
-      console.error("could not find elem", { mr });
-      return;
-    }
-    const isMine = isMrMine(mr, options);
-    const tags = getTags(mr);
-    const badge = getBadge(isMine, tags);
-    const badgeColor = colors[badge];
-    issueElem.style.borderLeft = `5px solid ${badgeColor}`;
-    issueElem.style.paddingLeft = "10px";
-    const issueInfoElem = issueElem.querySelector(".issuable-info");
-    if (!issueInfoElem) {
-      console.error("could not find issuable-info", { mr });
-      return;
-    }
-    if (badge === "done" /* DONE */) {
-      issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div>${displayBadge("can_be_merged" /* CAN_BE_MERGED */, isMine)}</div>
-    </div>`;
-      return;
-    }
-    issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div class="has-tooltip" title="is Mine: ${isMine ? "true" : "false"}" style="display: flex; gap: 5px">${tags.map((tag) => displayBadge(tag, isMine)).join("")}</div>
-    </div>`;
-  };
-  var myFetch = async (url) => {
-    return fetch(`${options.baseUrl}/api/v4${url}`).then((res) => res.json());
-  };
-  var getMrOfProject = async (projectName, mrIids) => {
-    const project = (await myFetch(`/projects?search=${projectName}`)).shift();
-    const params = mrIids.map((iid) => `iids[]=${iid}`).join("&");
-    return myFetch(`/projects/${project.id}/merge_requests?with_labels_details=true&with_merge_status_recheck=true&${params}`);
-  };
-  var getAllMr = async () => {
-    const mergeRequests = document.querySelectorAll("li.merge-request .merge-request-title-text a");
-    const mrByProject = /* @__PURE__ */ new Map();
-    for (let i4 = 0; i4 < mergeRequests.length; i4++) {
-      const href = mergeRequests[i4].getAttribute("href");
-      if (!href) {
-        continue;
-      }
-      const [project, , , mrIid] = href.split("/").splice(-4);
-      const iidList = mrByProject.get(project) ?? [];
-      iidList.push(mrIid);
-      mrByProject.set(project, iidList);
-    }
-    const mrsByProject = await Promise.all(
-      Array.from(mrByProject).map(([projectName, mrIIds]) => getMrOfProject(projectName, mrIIds))
-    );
-    return mrsByProject.flat();
-  };
-  var processDiscussion = async (elem, mr) => {
-    const discussions = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/discussions?per_page=100`);
-    const humanDiscussions = discussions.filter((d3) => !d3.individual_note);
-    if (!humanDiscussions.length) {
-      elem.innerHTML += `<div class="discussion">No discussion</div>`;
-      return;
-    }
-    const resolved = humanDiscussions.filter((discussion) => !!discussion.notes[0].resolved);
-    const allResolved = resolved.length >= humanDiscussions.length;
-    if (!allResolved) {
-      addTag(mr, "discussions_not_resolved" /* DISCUSSIONS_NOT_RESOLVED */);
-    }
-    const color = allResolved ? colors["done" /* DONE */] : isMrMine(mr, options) ? colors["actions" /* ACTIONS */] : colors["wait" /* WAIT */];
-    elem.innerHTML += `<div class="discussion" style="color: ${color}">Discussions ${resolved.length}/${humanDiscussions.length}</div>`;
-  };
-  var processApprovals = async (elem, mr) => {
-    const approval = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`);
-    if (!approval.approved) {
-      const color2 = isMrMine(mr, options) ? colors["wait" /* WAIT */] : colors["actions" /* ACTIONS */];
-      if (!isMrMine(mr, options)) {
-        addTag(mr, "not_approved_by_me" /* NOT_APPROVED_BY_ME */);
-      }
-      addTag(mr, "missing_approvals" /* MISSING_APPROVALS */);
-      elem.innerHTML += `<div class="approval" style="color: ${color2}">No approval</div>`;
-      return;
-    }
-    const needed = options.requiredApprovals ?? 3;
-    const requiredResolvers = approval.approved_by.filter((u4) => !options.facultativeApprovers.includes(u4.user.username));
-    const allResolved = requiredResolvers.length >= needed;
-    const approvedByMe = !!approval.approved_by.find((u4) => u4.user.username === options.username);
-    if (!allResolved) {
-      if (!approvedByMe && !isMrMine(mr, options)) {
-        addTag(mr, "not_approved_by_me" /* NOT_APPROVED_BY_ME */);
-      }
-      addTag(mr, "missing_approvals" /* MISSING_APPROVALS */);
-    }
-    const color = allResolved ? colors["done" /* DONE */] : isMrMine(mr, options) || approvedByMe ? colors["wait" /* WAIT */] : colors["actions" /* ACTIONS */];
-    const allAvatars = approval.approved_by.map((u4) => `<span class="author-link has-tooltip" title="Approved by ${u4.user.name}" data-container="body" data-qa-selector="assignee_link" data-original-title="Approved by ${u4.user.name}" aria-describedby="gl-tooltip5">
-<img width="16" class="avatar avatar-inline s16 js-lazy-loaded" alt="" src="${u4.user.avatar_url}" loading="lazy" data-qa_selector="js_lazy_loaded_content">
-</span>`).join("");
-    elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${allAvatars})</div>`;
-  };
-  var processCI = async (mr) => {
-    const fullMR = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}?include_diverged_commits_count=true`);
-    if (fullMR.diverged_commits_count > 0) {
-      addTag(mr, "need_rebase" /* NEED_REBASE */);
-    }
-    if (fullMR.detailed_merge_status === "ci_must_pass" || fullMR.pipeline && fullMR.pipeline.status !== "success") {
-      addTag(mr, "ci_unsuccessful" /* CI_UNSUCCESSFUL */);
-    }
-  };
-  var processMr = async (mr) => {
-    const elem = document.querySelector(`#merge_request_${mr.id} .issuable-meta`);
-    if (!elem) {
-      return;
-    }
-    await Promise.all([
-      processDiscussion(elem, mr),
-      processApprovals(elem, mr),
-      processCI(mr)
-    ]);
-    setBadge(mr);
-  };
-  var isOld = (mr, ignoreAfterMonth) => {
-    if (!ignoreAfterMonth || ignoreAfterMonth < 1) {
-      return false;
-    }
-    const now = /* @__PURE__ */ new Date();
-    const targetDate = new Date(mr.updated_at);
-    const monthDiff = Math.abs((now.getFullYear() - targetDate.getFullYear()) * 12 + (now.getMonth() - targetDate.getMonth()));
-    return monthDiff > ignoreAfterMonth;
   };
   var getMainContentContainer = () => {
     return document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
@@ -1114,8 +925,6 @@
     const containerTarget = document.querySelector(".content-wrapper") || document.body;
     containerTarget.appendChild(page);
     try {
-      const allMr = await getAllMr();
-      await Promise.all(allMr.filter((mr) => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map((mr) => processMr(mr)));
       mountOverview(page, options);
     } catch (e3) {
       page.innerHTML = `<div style="color:#ec5941;padding:24px;font-family:var(--gl-font-family,system-ui,sans-serif)">Failed to build overview: ${e3.message}</div>`;
@@ -1248,13 +1057,8 @@
     }
     ensureSidebarButton();
     startSidebarObserver();
-    if (syntheticPageVisible) {
-      await renderSyntheticPage();
-      updateSidebarButtonState();
-    } else {
-      const allMr = await getAllMr();
-      await Promise.all(allMr.filter((mr) => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map((mr) => processMr(mr)));
-    }
+    await renderSyntheticPage();
+    updateSidebarButtonState();
     window.addEventListener("hashchange", () => {
       const shouldBeVisible = window.location.hash.replace("#", "") === URL_ANCHOR;
       if (shouldBeVisible !== syntheticPageVisible) {

@@ -1,10 +1,10 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { Options } from './types'
+import { Options, PROJECTS, ProjectGroup } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
-import { useProjectMergeRequests, PROJECTS } from './hooks/useProjectMergeRequests'
+import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
 import { useReviewMeta } from './hooks/useReviewMeta'
 import { isHotfixMr, isDraftMr } from './utils/mrUtils'
 import { OVERVIEW_CSS } from './overviewStyles'
@@ -33,28 +33,19 @@ const OverviewPage = ({ options }: OverviewProps) => {
   // Set page title while overview is displayed
   usePageTitle('Git Buster Overview')
 
+  const groups: ProjectGroup[] = (options.projects && options.projects.length ? options.projects : PROJECTS)
   const initialGroup = (() => {
-    try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return PROJECTS.find(g => g.name === v)?.name || PROJECTS[0].name } catch { return PROJECTS[0].name } })()
+    try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return groups.find(g => g.name === v)?.name || groups[0].name } catch { return groups[0].name } })()
   const [projectGroup, setProjectGroup] = useState<string>(initialGroup)
   // Selected project (by short name) auto-derived: first project of group if group stored
-  const initialSelectedProject = (() => {
-    const group = PROJECTS.find(g => g.name === initialGroup) || PROJECTS[0]
-    return group.projects[0]?.split('/').slice(-1)[0] || null
-  })()
-  const [selectedProject, setSelectedProject] = useState<string | null>(initialSelectedProject)
+  const [selectedProject, setSelectedProject] = useState<string | null>(null)
   useEffect(() => { try { localStorage.setItem(LS_PROJECT_GROUP_KEY, projectGroup) } catch {} }, [projectGroup])
   // When project group changes, auto-pick first project in that group
   useEffect(() => {
-    const group = PROJECTS.find(g => g.name === projectGroup)
-    if (group && group.projects.length) {
-      const firstShort = group.projects[0].split('/').slice(-1)[0]
-      setSelectedProject(firstShort)
-    } else {
       setSelectedProject(null)
-    }
-  }, [projectGroup])
+  }, [projectGroup, groups])
 
-  const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl, projectGroup)
+  const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl, groups, projectGroup)
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
@@ -95,7 +86,7 @@ const OverviewPage = ({ options }: OverviewProps) => {
         <h1>Git Buster Overview</h1>
         <label className="gb-group-select-label">
           <select className="gb-group-select" value={projectGroup} onChange={e => setProjectGroup((e.target as HTMLSelectElement).value)}>
-            {PROJECTS.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
+            {groups.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
           </select>
         </label>
       </div>

@@ -21,4 +21,3 @@ export const NonPersistantFilter = ({ projects, selectedProject, setSelectedProj
     </div>
   )
 }
-

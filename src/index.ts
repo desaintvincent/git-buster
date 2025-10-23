@@ -5,7 +5,7 @@
 // Several foreground scripts can be declared
 // and injected into the same or different pages.
 
-import { Options } from './types'
+import { Options, PROJECTS } from './types'
 import { mountOverview } from './overviewComponent'
 import { unmountOverview } from './overviewComponent'
 
@@ -26,7 +26,7 @@ const loadOptions = async (): Promise<Options> => {
 
     return {
         ...scoppedOptions,
-        facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(',').filter(Boolean),
+        projects: PROJECTS,
     }
 
 }

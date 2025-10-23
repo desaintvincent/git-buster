@@ -1,14 +1,17 @@
 /// <reference types="chrome" />
 // Shared domain types and utilities for git-buster
 
+export type ProjectGroup = { name: string; projects: string[] }
+export const PROJECTS: ProjectGroup[] = [
+  { name: 'sywa', projects: [ 'sywa/sywa/frontend', 'sywa/sywa/backend', 'sywa/sywa/sywatt', 'sywa/sywa/sywack' ] },
+  { name: 'slip', projects: [ 'slip/mono-slip' ] }
+]
+
 export type Options = {
     enable?: boolean;
     username?: string;
     baseUrl?: string;
-    skipDrafts?: boolean;
-    requiredApprovals?: number;
-    facultativeApprovers: string[];
-    ignoreAfterMonth?: number;
+    projects?: ProjectGroup[]; // Full PROJECTS variable attached to plugin options
 }
 
 export type User = {
@@ -148,4 +151,3 @@ export const addTag = (mr: MR, tag: TAG): void => {
     tagsByMr[mr.id].push(tag)
 }
 export const getTags = (mr: MR): TAG[] => tagsByMr[mr.id] ?? []
-
