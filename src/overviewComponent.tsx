@@ -51,6 +51,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [invertApprover, setInvertApprover] = useState<boolean>(false)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
+  const [invertAuthor, setInvertAuthor] = useState<boolean>(false)
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus])
 
   // Page title only while visible
@@ -110,8 +111,8 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   // Apply author filter last
   const authorFiltered = selectedAuthor
     ? (selectedAuthor === NOT_ME && options.username
-        ? approverFiltered.filter(mr => mr.author?.username !== options.username)
-        : approverFiltered.filter(mr => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor))
+        ? approverFiltered.filter(mr => invertAuthor ? mr.author?.username === options.username : mr.author?.username !== options.username)
+        : approverFiltered.filter(mr => invertAuthor ? (mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor) : (mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor)))
     : approverFiltered
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = authorFiltered.filter(isHotfixMr).length
@@ -133,7 +134,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         </label>
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} />
-      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} />
+      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
         <div className="gb-small-text">{authorFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>

@@ -24,13 +24,15 @@ interface Props {
   username?: string
   disabled?: boolean // optional for backward compatibility
   reviewMetaLoading: boolean
+  invertAuthor: boolean
+  setInvertAuthor: (v:boolean)=>void
 }
 
 // Wrapper that groups the non-persistent project, author, reviewer & approver filters
-export const NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading }: Props) => (
+export const NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading, invertAuthor, setInvertAuthor }: Props) => (
   <div className="gb-filter-bar">
     <NonPersistentProjectFilter projects={projects} selectedProject={selectedProject} setSelectedProject={setSelectedProject} />
-    <NonPersistentAuthorFilter authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={!!disabled} username={username} />
+    <NonPersistentAuthorFilter authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={!!disabled} username={username} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
     <NonPersistentReviewerFilter users={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invert={invertReviewer} setInvert={setInvertReviewer} disabled={reviewMetaLoading} />
     <NonPersistentApproverFilter users={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invert={invertApprover} setInvert={setInvertApprover} disabled={reviewMetaLoading} />
   </div>

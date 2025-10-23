@@ -87,4 +87,8 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 .gb-pipeline-status.success { color:#2da160; }
 .gb-pipeline-status.failed { color:#ec5941; }
 .gb-pipeline-status.other { color:#c17d10; }
+.gb-avatar-filter-value { position:relative; display:inline-block; }
+.gb-avatar-invert-marker { position:absolute; top:-3px; right:-3px; background:#fff; color:#ec5941; font-size:10px; line-height:1; padding:1px 3px; border:1px solid #ec5941; border-radius:8px; box-shadow:0 0 2px rgba(0,0,0,.25); }
+@media (prefers-color-scheme: dark){ .gb-avatar-invert-marker { background:#333238; } }
+body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-invert-marker { background:#333238; }
 `;

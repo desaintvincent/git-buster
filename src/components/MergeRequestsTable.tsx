@@ -37,8 +37,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
             <th className="gb-th">Title</th>
             <th className="gb-th">Project</th>
             <th className="gb-th">Author</th>
-            <th className="gb-th gb-td-small">Approvals</th>
+            {/* Swapped order: Reviewers before Approvals */}
             <th className="gb-th gb-td-small">Reviewers</th>
+            <th className="gb-th gb-td-small">Approvals</th>
             <th className="gb-th gb-td-small">Pipeline</th>
             <th className="gb-th gb-td-small">{updatedHeader}</th>
           </tr>
@@ -72,8 +73,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 </td>
                 <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                 <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                {/* Swapped cells: reviewers first */}
                 <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
                 <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                 <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
@@ -84,15 +86,13 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
     )
   }
 
-  // Group by JIRA ticket (uppercase) or __NO_TICKET__ sentinel
+  // Group mode
   type Group = { key: string; ticket: string | null; items: MRWithProject[]; latestTs: number }
   const groupMap = new Map<string, Group>()
-  for (const mr of sortedMrs) { // already sorted, but we'll compute latestTs explicitly
+  for (const mr of sortedMrs) {
     const ticket = extractJiraTicket(mr.title)
     const key = ticket || '__NO_TICKET__'
-    if (!groupMap.has(key)) {
-      groupMap.set(key, { key, ticket, items: [], latestTs: 0 })
-    }
+    if (!groupMap.has(key)) groupMap.set(key, { key, ticket, items: [], latestTs: 0 })
     const g = groupMap.get(key)!
     g.items.push(mr)
     const ts = new Date(mr.updated_at).getTime()
@@ -100,7 +100,6 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
   }
   const groups: Group[] = Array.from(groupMap.values())
   groups.sort((a,b) => sortDirection === 'asc' ? a.latestTs - b.latestTs : b.latestTs - a.latestTs)
-  // Sort MRs inside each group by updated according to sortDirection
   groups.forEach(g => g.items.sort((a,b) => {
     const da = new Date(a.updated_at).getTime();
     const db = new Date(b.updated_at).getTime();
@@ -114,8 +113,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           <th className="gb-th">Title</th>
           <th className="gb-th">Project</th>
           <th className="gb-th">Author</th>
-          <th className="gb-th gb-td-small">Approvals</th>
+          {/* Swapped order in group header too */}
           <th className="gb-th gb-td-small">Reviewers</th>
+          <th className="gb-th gb-td-small">Approvals</th>
           <th className="gb-th gb-td-small">Pipeline</th>
           <th className="gb-th gb-td-small">{updatedHeader}</th>
         </tr>
@@ -159,8 +159,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                   </td>
                   <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                   <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                  {/* Swapped cells: reviewers first */}
                   <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
                   <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                   <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>

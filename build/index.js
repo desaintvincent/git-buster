@@ -126,7 +126,7 @@
     };
   }
   function O(n2, u4, t3, i4, r3, o3, e3, f4, c3, s3) {
-    var a3, h3, p3, v3, y3, _2, m3, b, S2, C3, M2, $2, P2, A2, H, L2, T2, j3 = u4.type;
+    var a3, h3, p3, v3, y3, _2, m3, b, S2, C3, M2, $2, P2, A3, H, L2, T3, j3 = u4.type;
     if (null != u4.constructor) return null;
     128 & t3.__u && (c3 = !!(32 & t3.__u), o3 = [f4 = u4.__e = t3.__e]), (a3 = l.__b) && a3(u4);
     n: if ("function" == typeof j3) try {
@@ -143,19 +143,19 @@
           h3.componentDidUpdate(v3, y3, _2);
         });
       }
-      if (h3.context = M2, h3.props = b, h3.__P = n2, h3.__e = false, P2 = l.__r, A2 = 0, S2) {
+      if (h3.context = M2, h3.props = b, h3.__P = n2, h3.__e = false, P2 = l.__r, A3 = 0, S2) {
         for (h3.state = h3.__s, h3.__d = false, P2 && P2(u4), a3 = h3.render(h3.props, h3.state, h3.context), H = 0; H < h3._sb.length; H++) h3.__h.push(h3._sb[H]);
         h3._sb = [];
       } else do {
         h3.__d = false, P2 && P2(u4), a3 = h3.render(h3.props, h3.state, h3.context), h3.state = h3.__s;
-      } while (h3.__d && ++A2 < 25);
+      } while (h3.__d && ++A3 < 25);
       h3.state = h3.__s, null != h3.getChildContext && (i4 = d(d({}, i4), h3.getChildContext())), S2 && !p3 && null != h3.getSnapshotBeforeUpdate && (_2 = h3.getSnapshotBeforeUpdate(v3, y3)), L2 = a3, null != a3 && a3.type === k && null == a3.key && (L2 = V(a3.props.children)), f4 = I(n2, w(L2) ? L2 : [L2], u4, t3, i4, r3, o3, e3, f4, c3, s3), h3.base = u4.__e, u4.__u &= -161, h3.__h.length && e3.push(h3), m3 && (h3.__E = h3.__ = null);
     } catch (n3) {
       if (u4.__v = null, c3 || null != o3) if (n3.then) {
         for (u4.__u |= c3 ? 160 : 128; f4 && 8 == f4.nodeType && f4.nextSibling; ) f4 = f4.nextSibling;
         o3[o3.indexOf(f4)] = null, u4.__e = f4;
       } else {
-        for (T2 = o3.length; T2--; ) g(o3[T2]);
+        for (T3 = o3.length; T3--; ) g(o3[T3]);
         z(u4);
       }
       else u4.__e = t3.__e, u4.__k = t3.__k, n3.then || z(u4);
@@ -318,6 +318,15 @@
     var i4 = p2(t2++, 3);
     !c2.__s && C2(i4.__H, u4) && (i4.__ = n2, i4.u = u4, r2.__H.__h.push(i4));
   }
+  function A2(n2) {
+    return o2 = 5, T2(function() {
+      return { current: n2 };
+    }, []);
+  }
+  function T2(n2, r3) {
+    var u4 = p2(t2++, 7);
+    return C2(u4.__H, r3) && (u4.__ = n2(), u4.__H = r3, u4.__h = n2), u4.__;
+  }
   function j2() {
     for (var n2; n2 = f2.shift(); ) if (n2.__P && n2.__H) try {
       n2.__H.__h.forEach(z2), n2.__H.__h.forEach(B2), n2.__H.__h = [];
@@ -443,27 +452,56 @@
 
   // src/components/NonPersistentAuthorFilter.tsx
   var NOT_ME = "__NOT_ME__";
-  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled, username }) => {
+  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled, username, invertAuthor, setInvertAuthor }) => {
     const [open, setOpen] = d2(false);
+    const ref = A2(null);
+    y2(() => {
+      const handler = (e3) => {
+        if (open && ref.current && !ref.current.contains(e3.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
     const uniqueAuthors = authors.filter((a3) => !!a3?.username);
-    const current = selectedAuthor === NOT_ME ? username ? { username: NOT_ME, avatar_url: "", id: -1 } : null : uniqueAuthors.find((a3) => a3.username === selectedAuthor) || null;
+    const isNotMe = selectedAuthor === NOT_ME;
+    const meUser = username ? uniqueAuthors.find((a3) => a3.username === username) || null : null;
+    const current = isNotMe ? meUser : uniqueAuthors.find((a3) => a3.username === selectedAuthor) || null;
     const choose = (usernameChoice) => {
       setSelectedAuthor(usernameChoice);
+      if (usernameChoice === null) {
+        setInvertAuthor(false);
+      }
       setOpen(false);
     };
-    return /* @__PURE__ */ u3("div", { className: "gb-select", children: [
-      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), title: disabled ? "Disabled when author scope is Mine" : "", children: [
-        current && current.username !== NOT_ME && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: current?.username === NOT_ME ? "Not me" : "All authors" }),
-        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? current.username === NOT_ME ? "Not me" : current.username : "" })
+    const chooseNotMe = () => {
+      setSelectedAuthor(NOT_ME);
+      setInvertAuthor(false);
+      setOpen(false);
+    };
+    const displayName = isNotMe ? "(not) me" : current ? `${invertAuthor ? "(not) " : ""}${current.username}` : "";
+    return /* @__PURE__ */ u3("div", { className: "gb-select", ref, children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), "aria-expanded": open, title: disabled ? "Disabled when author scope is Mine" : "", children: [
+        current && current.avatar_url ? /* @__PURE__ */ u3("span", { className: "gb-avatar-wrapper gb-avatar-filter-value", children: [
+          /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }),
+          (isNotMe || invertAuthor) && /* @__PURE__ */ u3("span", { className: "gb-avatar-invert-marker", children: "\u2717" })
+        ] }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: displayName })
       ] }),
       open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
-        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }) }),
-        username && /* @__PURE__ */ u3("div", { className: `gb-select-item ${selectedAuthor === NOT_ME ? "active" : ""}`, onClick: () => choose(NOT_ME), children: /* @__PURE__ */ u3("span", { children: "Not me" }) }),
+        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current && !isNotMe ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }) }),
+        username && /* @__PURE__ */ u3("div", { className: `gb-select-item ${isNotMe ? "active" : ""}`, onClick: chooseNotMe, children: /* @__PURE__ */ u3("span", { children: "Not me" }) }),
         uniqueAuthors.map((a3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${a3.username === selectedAuthor ? "active" : ""}`, onClick: () => choose(a3.username), children: [
           /* @__PURE__ */ u3("img", { src: a3.avatar_url, alt: a3.username, className: "gb-avatar" }),
           /* @__PURE__ */ u3("span", { children: a3.username })
         ] }, a3.id)),
-        !uniqueAuthors.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No authors" })
+        !uniqueAuthors.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No authors" }),
+        current && !isNotMe && /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvertAuthor(!invertAuthor), children: [
+          /* @__PURE__ */ u3("input", { type: "checkbox", checked: invertAuthor, onChange: (e3) => setInvertAuthor(e3.target.checked) }),
+          " ",
+          /* @__PURE__ */ u3("span", { children: "Invert (not)" })
+        ] })
       ] })
     ] });
   };
@@ -471,19 +509,29 @@
   // src/components/NonPersistentReviewerFilter.tsx
   var NonPersistentReviewerFilter = ({ users, selectedReviewer, setSelectedReviewer, invert, setInvert, disabled }) => {
     const [open, setOpen] = d2(false);
+    const ref = A2(null);
+    y2(() => {
+      const handler = (e3) => {
+        if (open && ref.current && !ref.current.contains(e3.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
     const unique = users.filter((u4) => !!u4?.username);
     const current = unique.find((u4) => u4.username === selectedReviewer) || null;
     const choose = (usernameChoice) => {
       setSelectedReviewer(usernameChoice);
       setOpen(false);
     };
-    return /* @__PURE__ */ u3("div", { className: "gb-select", title: "Filter by reviewers (from approvals/comments excluding author)", children: [
-      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), children: [
-        current && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "Reviewer" }),
-        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: [
-          current ? current.username : "",
-          invert && current ? " (not)" : ""
-        ] })
+    return /* @__PURE__ */ u3("div", { className: "gb-select", ref, title: "Filter by reviewers (from approvals/comments excluding author)", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), "aria-expanded": open, children: [
+        current && current.avatar_url ? /* @__PURE__ */ u3("span", { className: "gb-avatar-wrapper gb-avatar-filter-value", children: [
+          /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }),
+          invert && /* @__PURE__ */ u3("span", { className: "gb-avatar-invert-marker", children: "\u2717" })
+        ] }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All reviewers" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? `${invert ? "(not) " : ""}${current.username}` : "" })
       ] }),
       open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
         /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All reviewers" }) }),
@@ -492,10 +540,10 @@
           /* @__PURE__ */ u3("span", { children: u4.username })
         ] }, u4.id)),
         !unique.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No reviewers" }),
-        /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
+        current && /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
           /* @__PURE__ */ u3("input", { type: "checkbox", checked: invert, onChange: (e3) => setInvert(e3.target.checked) }),
           " ",
-          /* @__PURE__ */ u3("span", { children: "Not reviewed by selected" })
+          /* @__PURE__ */ u3("span", { children: "Invert (not)" })
         ] })
       ] })
     ] });
@@ -504,19 +552,29 @@
   // src/components/NonPersistentApproverFilter.tsx
   var NonPersistentApproverFilter = ({ users, selectedApprover, setSelectedApprover, invert, setInvert, disabled }) => {
     const [open, setOpen] = d2(false);
+    const ref = A2(null);
+    y2(() => {
+      const handler = (e3) => {
+        if (open && ref.current && !ref.current.contains(e3.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handler);
+      return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
     const unique = users.filter((u4) => !!u4?.username);
     const current = unique.find((u4) => u4.username === selectedApprover) || null;
     const choose = (usernameChoice) => {
       setSelectedApprover(usernameChoice);
       setOpen(false);
     };
-    return /* @__PURE__ */ u3("div", { className: "gb-select", title: "Filter by approvers (users who approved)", children: [
-      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), children: [
-        current && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "Approver" }),
-        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: [
-          current ? current.username : "",
-          invert && current ? " (not)" : ""
-        ] })
+    return /* @__PURE__ */ u3("div", { className: "gb-select", ref, title: "Filter by approvers (users who approved)", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), "aria-expanded": open, children: [
+        current && current.avatar_url ? /* @__PURE__ */ u3("span", { className: "gb-avatar-wrapper gb-avatar-filter-value", children: [
+          /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }),
+          invert && /* @__PURE__ */ u3("span", { className: "gb-avatar-invert-marker", children: "\u2717" })
+        ] }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All approvers" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? `${invert ? "(not) " : ""}${current.username}` : "" })
       ] }),
       open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
         /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All approvers" }) }),
@@ -525,19 +583,19 @@
           /* @__PURE__ */ u3("span", { children: u4.username })
         ] }, u4.id)),
         !unique.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No approvers" }),
-        /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
+        current && /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
           /* @__PURE__ */ u3("input", { type: "checkbox", checked: invert, onChange: (e3) => setInvert(e3.target.checked) }),
           " ",
-          /* @__PURE__ */ u3("span", { children: "Not approved by selected" })
+          /* @__PURE__ */ u3("span", { children: "Invert (not)" })
         ] })
       ] })
     ] });
   };
 
   // src/components/NonPersistantFilter.tsx
-  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading, invertAuthor, setInvertAuthor }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
-    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: !!disabled, username }),
+    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: !!disabled, username, invertAuthor, setInvertAuthor }),
     /* @__PURE__ */ u3(NonPersistentReviewerFilter, { users: reviewerUsers, selectedReviewer, setSelectedReviewer, invert: invertReviewer, setInvert: setInvertReviewer, disabled: reviewMetaLoading }),
     /* @__PURE__ */ u3(NonPersistentApproverFilter, { users: approverUsers, selectedApprover, setSelectedApprover, invert: invertApprover, setInvert: setInvertApprover, disabled: reviewMetaLoading })
   ] });
@@ -646,8 +704,8 @@
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
-          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
         ] }) }),
@@ -683,8 +741,8 @@
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -695,9 +753,7 @@
     for (const mr of sortedMrs) {
       const ticket = extractJiraTicket(mr.title);
       const key = ticket || "__NO_TICKET__";
-      if (!groupMap.has(key)) {
-        groupMap.set(key, { key, ticket, items: [], latestTs: 0 });
-      }
+      if (!groupMap.has(key)) groupMap.set(key, { key, ticket, items: [], latestTs: 0 });
       const g2 = groupMap.get(key);
       g2.items.push(mr);
       const ts = new Date(mr.updated_at).getTime();
@@ -715,8 +771,8 @@
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
-        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
       ] }) }),
@@ -757,8 +813,8 @@
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -1027,6 +1083,10 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 .gb-pipeline-status.success { color:#2da160; }
 .gb-pipeline-status.failed { color:#ec5941; }
 .gb-pipeline-status.other { color:#c17d10; }
+.gb-avatar-filter-value { position:relative; display:inline-block; }
+.gb-avatar-invert-marker { position:absolute; top:-3px; right:-3px; background:#fff; color:#ec5941; font-size:10px; line-height:1; padding:1px 3px; border:1px solid #ec5941; border-radius:8px; box-shadow:0 0 2px rgba(0,0,0,.25); }
+@media (prefers-color-scheme: dark){ .gb-avatar-invert-marker { background:#333238; } }
+body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-invert-marker { background:#333238; }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -1098,6 +1158,7 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
     const [invertApprover, setInvertApprover] = d2(false);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     const [sortDirection, setSortDirection] = d2("desc");
+    const [invertAuthor, setInvertAuthor] = d2(false);
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus });
     }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus]);
@@ -1146,7 +1207,7 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
       const has = approvers.some((u4) => u4.username === selectedApprover);
       return invertApprover ? !has : has;
     }) : reviewerFiltered;
-    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? approverFiltered.filter((mr) => mr.author?.username !== options2.username) : approverFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : approverFiltered;
+    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? approverFiltered.filter((mr) => invertAuthor ? mr.author?.username === options2.username : mr.author?.username !== options2.username) : approverFiltered.filter((mr) => invertAuthor ? mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor : mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : approverFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = authorFiltered.filter(isHotfixMr).length;
     const handleRefreshReviewMeta = () => setReviewMetaRefreshToken((t3) => t3 + 1);
@@ -1161,7 +1222,7 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus }),
-      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading }),
+      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading, invertAuthor, setInvertAuthor }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
         /* @__PURE__ */ u3("div", { className: "gb-small-text", children: [
