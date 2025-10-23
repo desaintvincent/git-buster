@@ -602,11 +602,9 @@
   ] });
 
   // src/hooks/useProjectMergeRequests.ts
-  var PROJECT_PATHS = [
-    "sywa/sywa/frontend",
-    "sywa/sywa/backend",
-    "sywa/sywa/sywatt",
-    "sywa/sywa/sywack"
+  var PROJECTS = [
+    { name: "sywa", projects: ["sywa/sywa/frontend", "sywa/sywa/backend", "sywa/sywa/sywatt", "sywa/sywa/sywack"] },
+    { name: "slip", projects: ["slip/mono-slip"] }
   ];
   var fetchOpenedMrsForProject = async (baseUrl, projectPath) => {
     const encoded = encodeURIComponent(projectPath);
@@ -618,7 +616,7 @@
     const data = await res.json();
     return data.map((mr) => ({ ...mr, projectPath }));
   };
-  var useProjectMergeRequests = (baseUrl) => {
+  var useProjectMergeRequests = (baseUrl, groupName) => {
     const [mrs, setMrs] = d2([]);
     const [loading, setLoading] = d2(true);
     const [error, setError] = d2(null);
@@ -630,7 +628,9 @@
       }
       let cancelled = false;
       setLoading(true);
-      Promise.all(PROJECT_PATHS.map((p3) => fetchOpenedMrsForProject(baseUrl, p3))).then((results) => {
+      const group = PROJECTS.find((g2) => g2.name === groupName) || PROJECTS[0];
+      const paths = group?.projects || [];
+      Promise.all(paths.map((p3) => fetchOpenedMrsForProject(baseUrl, p3))).then((results) => {
         if (!cancelled) {
           setMrs(results.flat());
           setError(null);
@@ -647,7 +647,7 @@
       return () => {
         cancelled = true;
       };
-    }, [baseUrl]);
+    }, [baseUrl, groupName]);
     return { mrs, loading, error };
   };
 
@@ -793,6 +793,10 @@
 .gb-mr-meta-line { display:flex; align-items:center; gap:8px; font-size:11px; color:#6b6b6b; }
 .gb-mr-branches { font-family:monospace; font-size:11px; }
 .gb-mr-iid { font-size:12px; font-weight:500; color:#6b6b6b; }
+.gb-header-row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.gb-group-select-label { display:flex; align-items:center; gap:6px; font-size:12px; }
+.gb-group-select-text { font-weight:600; font-size:12px; }
+.gb-group-select { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; color:#fff; font-size:12px; }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -808,6 +812,7 @@
 
   // src/overviewComponent.tsx
   var LS_FILTER_KEY = "gb_persistent_filters";
+  var LS_PROJECT_GROUP_KEY = "gb_project_group";
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
@@ -830,13 +835,41 @@
   };
   var OverviewPage = ({ options: options2 }) => {
     usePageTitle("Git Buster Overview");
-    const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl);
+    const initialGroup = (() => {
+      try {
+        const v3 = localStorage.getItem(LS_PROJECT_GROUP_KEY);
+        return PROJECTS.find((g2) => g2.name === v3)?.name || PROJECTS[0].name;
+      } catch {
+        return PROJECTS[0].name;
+      }
+    })();
+    const [projectGroup, setProjectGroup] = d2(initialGroup);
+    const initialSelectedProject = (() => {
+      const group = PROJECTS.find((g2) => g2.name === initialGroup) || PROJECTS[0];
+      return group.projects[0]?.split("/").slice(-1)[0] || null;
+    })();
+    const [selectedProject, setSelectedProject] = d2(initialSelectedProject);
+    y2(() => {
+      try {
+        localStorage.setItem(LS_PROJECT_GROUP_KEY, projectGroup);
+      } catch {
+      }
+    }, [projectGroup]);
+    y2(() => {
+      const group = PROJECTS.find((g2) => g2.name === projectGroup);
+      if (group && group.projects.length) {
+        const firstShort = group.projects[0].split("/").slice(-1)[0];
+        setSelectedProject(firstShort);
+      } else {
+        setSelectedProject(null);
+      }
+    }, [projectGroup]);
+    const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl, projectGroup);
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
     const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
-    const [selectedProject, setSelectedProject] = d2(null);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
@@ -861,7 +894,10 @@
       setReviewMetaRefreshToken((t3) => t3 + 1);
     };
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
-      /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
+      /* @__PURE__ */ u3("div", { className: "gb-header-row", children: [
+        /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
+        /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: PROJECTS.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
+      ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [

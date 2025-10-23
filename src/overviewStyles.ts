@@ -54,4 +54,8 @@ export const OVERVIEW_CSS = `
 .gb-mr-meta-line { display:flex; align-items:center; gap:8px; font-size:11px; color:#6b6b6b; }
 .gb-mr-branches { font-family:monospace; font-size:11px; }
 .gb-mr-iid { font-size:12px; font-weight:500; color:#6b6b6b; }
+.gb-header-row { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.gb-group-select-label { display:flex; align-items:center; gap:6px; font-size:12px; }
+.gb-group-select-text { font-weight:600; font-size:12px; }
+.gb-group-select { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; color:#fff; font-size:12px; }
 `;

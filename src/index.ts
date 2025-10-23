@@ -5,7 +5,7 @@
 // Several foreground scripts can be declared
 // and injected into the same or different pages.
 
-import { Options, MR, Approval, BADGE, TAG, colors, getBadge, displayBadge, addTag, getTags, isMrMine } from './types'
+import { Options } from './types'
 import { mountOverview } from './overviewComponent'
 import { unmountOverview } from './overviewComponent'
 
@@ -29,166 +29,6 @@ const loadOptions = async (): Promise<Options> => {
         facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(',').filter(Boolean),
     }
 
-}
-
-const setBadge = (mr: MR) => {
-    const issueElem = document.getElementById(`merge_request_${mr.id}`);
-    if (!issueElem) {
-        console.error('could not find elem', {mr})
-        return;
-    }
-
-    const isMine = isMrMine(mr, options)
-    const tags = getTags(mr)
-    const badge = getBadge(isMine, tags)
-    const badgeColor = colors[badge]
-
-    // @ts-ignore
-    issueElem.style.borderLeft = `5px solid ${badgeColor}`;
-    // @ts-ignore
-    issueElem.style.paddingLeft = '10px';
-
-    const issueInfoElem = issueElem.querySelector('.issuable-info')
-    if (!issueInfoElem) {
-        console.error('could not find issuable-info', {mr})
-        return
-    }
-
-    if (badge === BADGE.DONE) {
-        issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div>${displayBadge(TAG.CAN_BE_MERGED, isMine)}</div>
-    </div>`
-
-        return
-    }
-
-    issueInfoElem.innerHTML += `<div>
-        <div><br/></div>
-        <div class="has-tooltip" title="is Mine: ${isMine ? 'true' : 'false'}" style="display: flex; gap: 5px">${tags.map(tag => displayBadge(tag, isMine)).join('')}</div>
-    </div>`
-}
-
-const myFetch = async <T = any>(url: string): Promise<T> => {
-    return fetch(`${options.baseUrl}/api/v4${url}`).then(res => res.json() as T)
-}
-
-const getMrOfProject = async  (projectName: string, mrIids: string[]): Promise<MR[]> => {
-    const project = (await myFetch(`/projects?search=${projectName}`)).shift()
-
-
-    const params = mrIids.map(iid => `iids[]=${iid}`).join('&')
-    return myFetch(`/projects/${project.id}/merge_requests?with_labels_details=true&with_merge_status_recheck=true&${params}`)
-}
-
-const getAllMr = async (): Promise<MR[]> => {
-    const mergeRequests = document.querySelectorAll('li.merge-request .merge-request-title-text a');
-    const mrByProject = new Map()
-    for (let i = 0 ; i < mergeRequests.length ; i++) {
-        const href = mergeRequests[i].getAttribute('href')
-        if (!href) { continue }
-        const [project, , , mrIid] = href.split('/').splice(-4)
-
-        const iidList = mrByProject.get(project) ?? [];
-        iidList.push(mrIid);
-        mrByProject.set(project, iidList);
-    }
-
-    const mrsByProject = await Promise.all(
-        Array.from(mrByProject)
-            .map(([projectName, mrIIds]) => getMrOfProject(projectName, mrIIds))
-    );
-
-    return mrsByProject.flat();
-}
-
-const processDiscussion = async (elem: Element,mr: MR): Promise<void> => {
-    const discussions = await myFetch(`/projects/${mr.project_id}/merge_requests/${mr.iid}/discussions?per_page=100`)
-    const humanDiscussions = discussions.filter((d: Record<string, unknown>) => !d.individual_note)
-
-    if (!humanDiscussions.length) {
-        elem.innerHTML += `<div class="discussion">No discussion</div>`
-        return
-    }
-    const resolved = humanDiscussions.filter((discussion: any) => !!discussion.notes[0].resolved)
-    const allResolved = resolved.length >= humanDiscussions.length
-    if (!allResolved) {
-        addTag(mr, TAG.DISCUSSIONS_NOT_RESOLVED)
-    }
-    const color = allResolved ? colors[BADGE.DONE] : (isMrMine(mr, options) ? colors[BADGE.ACTIONS] : colors[BADGE.WAIT])
-    elem.innerHTML += `<div class="discussion" style="color: ${color}">Discussions ${resolved.length}/${humanDiscussions.length}</div>`
-}
-
-const processApprovals = async (elem: Element, mr: MR) => {
-    const approval = await myFetch<Approval>(`/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`)
-
-    if (!approval.approved) {
-        const color = ((isMrMine(mr, options)) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
-        if (!isMrMine(mr, options)) {
-            addTag(mr, TAG.NOT_APPROVED_BY_ME)
-        }
-        addTag(mr, TAG.MISSING_APPROVALS)
-        elem.innerHTML += `<div class="approval" style="color: ${color}">No approval</div>`
-        return
-    }
-
-    const needed = options.requiredApprovals ?? 3
-
-    const requiredResolvers = approval.approved_by.filter(u => !options.facultativeApprovers.includes(u.user.username))
-    const allResolved = requiredResolvers.length >= needed
-    const approvedByMe = !!approval.approved_by.find(u => u.user.username === options.username)
-
-    if (!allResolved) {
-        if (!approvedByMe && !isMrMine(mr, options)) {
-            addTag(mr, TAG.NOT_APPROVED_BY_ME)
-        }
-        addTag(mr, TAG.MISSING_APPROVALS)
-    }
-
-    const color = allResolved ? colors[BADGE.DONE] : ((isMrMine(mr, options) || approvedByMe) ? colors[BADGE.WAIT] : colors[BADGE.ACTIONS])
-
-    const allAvatars = approval.approved_by.map(u => `<span class="author-link has-tooltip" title="Approved by ${u.user.name}" data-container="body" data-qa-selector="assignee_link" data-original-title="Approved by ${u.user.name}" aria-describedby="gl-tooltip5">
-<img width="16" class="avatar avatar-inline s16 js-lazy-loaded" alt="" src="${u.user.avatar_url}" loading="lazy" data-qa_selector="js_lazy_loaded_content">
-</span>`).join('')
-
-    elem.innerHTML += `<div class="discussion" style="color: ${color}">Approvals ${approval.approved_by.length}/${needed} (${allAvatars})</div>`
-}
-
-const processCI = async (mr: MR): Promise<void> => {
-    const fullMR = await myFetch<any>(`/projects/${mr.project_id}/merge_requests/${mr.iid}?include_diverged_commits_count=true`)
-
-    if (fullMR.diverged_commits_count > 0) {
-        addTag(mr, TAG.NEED_REBASE)
-    }
-
-    if (fullMR.detailed_merge_status === "ci_must_pass" || (fullMR.pipeline && fullMR.pipeline.status !== 'success')) {
-        addTag(mr, TAG.CI_UNSUCCESSFUL)
-    }
-}
-
-
-const processMr = async (mr: MR): Promise<void> => {
-    const elem = document.querySelector(`#merge_request_${mr.id} .issuable-meta`)
-    if (!elem) { return }
-    await Promise.all([
-        processDiscussion(elem, mr),
-        processApprovals(elem, mr),
-        processCI(mr),
-    ])
-    setBadge(mr)
-}
-
-const isOld = (mr: MR, ignoreAfterMonth?: number): boolean => {
-    if (!ignoreAfterMonth || ignoreAfterMonth < 1) {
-        return false
-    }
-
-    const now = new Date();
-    const targetDate = new Date(mr.updated_at)
-
-    const monthDiff = Math.abs((now.getFullYear() - targetDate.getFullYear()) * 12 + (now.getMonth() - targetDate.getMonth()));
-
-    return monthDiff > ignoreAfterMonth
 }
 
 const getMainContentContainer = (): HTMLElement | null => {
@@ -218,8 +58,6 @@ const renderSyntheticPage = async () => {
     containerTarget.appendChild(page)
 
     try {
-        const allMr = await getAllMr()
-        await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
         mountOverview(page, options)
     } catch (e) {
         page.innerHTML = `<div style="color:#ec5941;padding:24px;font-family:var(--gl-font-family,system-ui,sans-serif)">Failed to build overview: ${(e as Error).message}</div>`
@@ -334,7 +172,6 @@ const startSidebarObserver = () => {
     observer.observe(document.body, { childList: true, subtree: true })
 }
 
-// Adjust init: remove loadPersistedVisibility/attachGlobalListeners
 const init = async () => {
     options = await loadOptions();
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
@@ -349,13 +186,8 @@ const init = async () => {
     ensureSidebarButton()
     startSidebarObserver()
 
-    if (syntheticPageVisible) {
-        await renderSyntheticPage()
-        updateSidebarButtonState()
-    } else {
-        const allMr = await getAllMr()
-        await Promise.all(allMr.filter(mr => !isOld(mr, options.ignoreAfterMonth) && (!options.skipDrafts || !mr.draft)).map(mr => processMr(mr)))
-    }
+    await renderSyntheticPage()
+    updateSidebarButtonState()
 
     // Listen to hash changes (user navigation or manual edit)
     window.addEventListener('hashchange', () => {

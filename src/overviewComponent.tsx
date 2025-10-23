@@ -4,7 +4,7 @@ import { Options } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
-import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
+import { useProjectMergeRequests, PROJECTS } from './hooks/useProjectMergeRequests'
 import { useReviewMeta } from './hooks/useReviewMeta'
 import { isHotfixMr, isDraftMr } from './utils/mrUtils'
 import { OVERVIEW_CSS } from './overviewStyles'
@@ -13,6 +13,7 @@ import { usePageTitle } from './hooks/usePageTitle'
 interface OverviewProps { options: Options }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
+const LS_PROJECT_GROUP_KEY = 'gb_project_group'
 interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; authorFilter: 'all' | 'mine' | 'others' }
 const loadFilters = (): PersistFilters => {
   try {
@@ -32,13 +33,33 @@ const OverviewPage = ({ options }: OverviewProps) => {
   // Set page title while overview is displayed
   usePageTitle('Git Buster Overview')
 
-  const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl)
+  const initialGroup = (() => {
+    try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return PROJECTS.find(g => g.name === v)?.name || PROJECTS[0].name } catch { return PROJECTS[0].name } })()
+  const [projectGroup, setProjectGroup] = useState<string>(initialGroup)
+  // Selected project (by short name) auto-derived: first project of group if group stored
+  const initialSelectedProject = (() => {
+    const group = PROJECTS.find(g => g.name === initialGroup) || PROJECTS[0]
+    return group.projects[0]?.split('/').slice(-1)[0] || null
+  })()
+  const [selectedProject, setSelectedProject] = useState<string | null>(initialSelectedProject)
+  useEffect(() => { try { localStorage.setItem(LS_PROJECT_GROUP_KEY, projectGroup) } catch {} }, [projectGroup])
+  // When project group changes, auto-pick first project in that group
+  useEffect(() => {
+    const group = PROJECTS.find(g => g.name === projectGroup)
+    if (group && group.projects.length) {
+      const firstShort = group.projects[0].split('/').slice(-1)[0]
+      setSelectedProject(firstShort)
+    } else {
+      setSelectedProject(null)
+    }
+  }, [projectGroup])
+
+  const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl, projectGroup)
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
   const [authorFilter, setAuthorFilter] = useState<'all' | 'mine' | 'others'>(() => loadFilters().authorFilter)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
-  const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, authorFilter }) }, [hideDrafts, onlyHotfixes, authorFilter])
   useEffect(() => { if (authorFilter === 'mine' && selectedAuthor) { setSelectedAuthor(null) } }, [authorFilter, selectedAuthor])
@@ -70,7 +91,14 @@ const OverviewPage = ({ options }: OverviewProps) => {
 
   return (
     <div className="gb-container">
-      <h1>Git Buster Overview</h1>
+      <div className="gb-header-row">
+        <h1>Git Buster Overview</h1>
+        <label className="gb-group-select-label">
+          <select className="gb-group-select" value={projectGroup} onChange={e => setProjectGroup((e.target as HTMLSelectElement).value)}>
+            {PROJECTS.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
+          </select>
+        </label>
+      </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} authorFilter={authorFilter} setAuthorFilter={setAuthorFilter} username={options.username} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={authorFilter === 'mine'} />
       <div className="gb-filter-row">
