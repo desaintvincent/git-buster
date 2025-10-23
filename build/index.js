@@ -407,7 +407,7 @@
   }
 
   // src/components/PersistentFilterBar.tsx
-  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3("label", { title: "Draft: GitLab draft/WIP flag or title starts with draft:/wip:", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
       " Hide draft MRs"
@@ -415,14 +415,6 @@
     /* @__PURE__ */ u3("label", { title: "Hotfix: targets main or master branch OR title contains \u{1F691}", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyHotfixes, onChange: (e3) => setOnlyHotfixes(e3.target.checked) }),
       " Only hotfix MRs"
-    ] }),
-    /* @__PURE__ */ u3("label", { title: "Filter by author relative to configured username", className: "gb-filter-item", children: [
-      /* @__PURE__ */ u3("span", { children: "Author:" }),
-      /* @__PURE__ */ u3("select", { value: authorFilter, onChange: (e3) => setAuthorFilter(e3.target.value), children: [
-        /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
-        /* @__PURE__ */ u3("option", { value: "mine", disabled: !username, children: "Mine" }),
-        /* @__PURE__ */ u3("option", { value: "others", disabled: !username, children: "Others" })
-      ] })
     ] })
   ] });
 
@@ -444,21 +436,23 @@
   };
 
   // src/components/NonPersistentAuthorFilter.tsx
-  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled }) => {
+  var NOT_ME = "__NOT_ME__";
+  var NonPersistentAuthorFilter = ({ authors, selectedAuthor, setSelectedAuthor, disabled, username }) => {
     const [open, setOpen] = d2(false);
     const uniqueAuthors = authors.filter((a3) => !!a3?.username);
-    const current = uniqueAuthors.find((a3) => a3.username === selectedAuthor) || null;
-    const choose = (username) => {
-      setSelectedAuthor(username);
+    const current = selectedAuthor === NOT_ME ? username ? { username: NOT_ME, avatar_url: "", id: -1 } : null : uniqueAuthors.find((a3) => a3.username === selectedAuthor) || null;
+    const choose = (usernameChoice) => {
+      setSelectedAuthor(usernameChoice);
       setOpen(false);
     };
     return /* @__PURE__ */ u3("div", { className: "gb-select", children: [
       /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), title: disabled ? "Disabled when author scope is Mine" : "", children: [
-        current ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }),
-        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? current.username : "" })
+        current && current.username !== NOT_ME && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: current?.username === NOT_ME ? "Not me" : "All authors" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: current ? current.username === NOT_ME ? "Not me" : current.username : "" })
       ] }),
       open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
         /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All authors" }) }),
+        username && /* @__PURE__ */ u3("div", { className: `gb-select-item ${selectedAuthor === NOT_ME ? "active" : ""}`, onClick: () => choose(NOT_ME), children: /* @__PURE__ */ u3("span", { children: "Not me" }) }),
         uniqueAuthors.map((a3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${a3.username === selectedAuthor ? "active" : ""}`, onClick: () => choose(a3.username), children: [
           /* @__PURE__ */ u3("img", { src: a3.avatar_url, alt: a3.username, className: "gb-avatar" }),
           /* @__PURE__ */ u3("span", { children: a3.username })
@@ -469,12 +463,10 @@
   };
 
   // src/components/NonPersistantFilter.tsx
-  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled }) => {
-    return /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
-      /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
-      /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled })
-    ] });
-  };
+  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+    /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
+    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: false, username })
+  ] });
 
   // src/UserAvatar.tsx
   var UserAvatar = ({ user, overlap = false }) => {
@@ -763,15 +755,14 @@
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
-      if (!raw) return { hideDrafts: false, onlyHotfixes: false, authorFilter: "all" };
+      if (!raw) return { hideDrafts: false, onlyHotfixes: false };
       const parsed = JSON.parse(raw);
       return {
         hideDrafts: !!parsed.hideDrafts,
-        onlyHotfixes: !!parsed.onlyHotfixes,
-        authorFilter: ["all", "mine", "others"].includes(parsed.authorFilter) ? parsed.authorFilter : "all"
+        onlyHotfixes: !!parsed.onlyHotfixes
       };
     } catch {
-      return { hideDrafts: false, onlyHotfixes: false, authorFilter: "all" };
+      return { hideDrafts: false, onlyHotfixes: false };
     }
   };
   var saveFilters = (f4) => {
@@ -801,33 +792,27 @@
     }, [projectGroup]);
     y2(() => {
       setSelectedProject(null);
-    }, [projectGroup, groups]);
+    }, [projectGroup]);
     const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl, groups, projectGroup);
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
     const [onlyHotfixes, setOnlyHotfixes] = d2(() => loadFilters().onlyHotfixes);
-    const [authorFilter, setAuthorFilter] = d2(() => loadFilters().authorFilter);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     y2(() => {
-      saveFilters({ hideDrafts, onlyHotfixes, authorFilter });
-    }, [hideDrafts, onlyHotfixes, authorFilter]);
-    y2(() => {
-      if (authorFilter === "mine" && selectedAuthor) {
-        setSelectedAuthor(null);
-      }
-    }, [authorFilter, selectedAuthor]);
+      saveFilters({ hideDrafts, onlyHotfixes });
+    }, [hideDrafts, onlyHotfixes]);
     const authors = Array.from(new Map(mrs.map((mr) => [mr.author?.username || "", mr.author])).values()).filter((a3) => !!a3?.username);
     const projectNames = Array.from(new Set(mrs.map((mr) => mr.projectPath.split("/").slice(-1)[0]))).sort((a3, b) => a3.localeCompare(b));
     const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
     const draftFiltered = hideDrafts ? titleFiltered.filter((mr) => !isDraftMr(mr)) : titleFiltered;
     const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
     const projectFiltered = selectedProject ? hotfixFiltered.filter((mr) => mr.projectPath.split("/").slice(-1)[0] === selectedProject) : hotfixFiltered;
-    const fullyFiltered = selectedAuthor && authorFilter !== "mine" ? projectFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : projectFiltered;
-    const fullyFilteredAuthorScoped = authorFilter === "mine" ? projectFiltered.filter((mr) => mr.author?.username === options2.username) : authorFilter === "others" ? projectFiltered.filter((mr) => mr.author?.username !== options2.username) : fullyFiltered;
+    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? projectFiltered.filter((mr) => mr.author?.username !== options2.username) : projectFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : projectFiltered;
+    const visibleMrs = authorFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
-    const displayedHotfixes = fullyFilteredAuthorScoped.filter(isHotfixMr).length;
-    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, fullyFilteredAuthorScoped, reviewMetaRefreshToken);
+    const displayedHotfixes = visibleMrs.filter(isHotfixMr).length;
+    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, visibleMrs, reviewMetaRefreshToken);
     const handleRefreshReviewMeta = () => {
       setReviewMetaRefreshToken((t3) => t3 + 1);
     };
@@ -836,20 +821,12 @@
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
-      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, authorFilter, setAuthorFilter, username: options2.username }),
-      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, disabled: authorFilter === "mine" }),
+      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }),
+      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username: options2.username }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
-        /* @__PURE__ */ u3(
-          "input",
-          {
-            value: filter,
-            onInput: (e3) => setFilter(e3.target.value),
-            placeholder: "Filter MRs by title...",
-            className: "gb-input"
-          }
-        ),
+        /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
         /* @__PURE__ */ u3("div", { className: "gb-small-text", children: [
-          fullyFilteredAuthorScoped.length,
+          visibleMrs.length,
           "/",
           mrs.length,
           " displayed \xB7 Hotfixes: ",
@@ -857,7 +834,7 @@
           "/",
           totalHotfixes
         ] }),
-        /* @__PURE__ */ u3("button", { type: "button", onClick: handleRefreshReviewMeta, disabled: reviewMetaLoading || !fullyFilteredAuthorScoped.length, className: "gb-btn", title: "Force refetch approvals & reviewers for visible MRs", children: "Refresh review meta" })
+        /* @__PURE__ */ u3("button", { type: "button", onClick: handleRefreshReviewMeta, disabled: reviewMetaLoading || !visibleMrs.length, className: "gb-btn", title: "Force refetch approvals & reviewers for visible MRs", children: "Refresh review meta" })
       ] }),
       /* @__PURE__ */ u3("div", { className: "gb-section", children: [
         loading && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "Loading merge requests\u2026" }),
@@ -865,9 +842,9 @@
           "Failed to load: ",
           error
         ] }),
-        !loading && !error && !fullyFilteredAuthorScoped.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
-        !!fullyFilteredAuthorScoped.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: fullyFilteredAuthorScoped, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }),
-        reviewMetaLoading && !!fullyFilteredAuthorScoped.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
+        !loading && !error && !visibleMrs.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
+        !!visibleMrs.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: visibleMrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }),
+        reviewMetaLoading && !!visibleMrs.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });
   };
@@ -998,6 +975,7 @@
       item.style.filter = "none";
     });
     item.addEventListener("click", (e3) => {
+      console.log("====> click on button", syntheticPageVisible);
       e3.preventDefault();
       syntheticPageVisible = !syntheticPageVisible;
       if (syntheticPageVisible) {
@@ -1053,6 +1031,7 @@
       return;
     }
     if (window.location.hash.replace("#", "") === URL_ANCHOR) {
+      console.log("====> initial visible from url");
       syntheticPageVisible = true;
     }
     ensureSidebarButton();

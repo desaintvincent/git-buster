@@ -23,6 +23,22 @@ button {
     margin-bottom: 5px;
 }
 
+.input-container.column {
+    flex-direction: column;
+    align-items: start;
+}
+
+.input-container.column textarea {
+    width: 100%;
+    resize: none;
+    height: 150px;
+}
+
+.input-container.column label {
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
 .input-container label {
     flex: 4;
 }

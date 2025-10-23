@@ -22,21 +22,9 @@
         <label for="username">Username</label>
         <input type="text" id="username" name="username" />
     </div>
-    <div class="input-container">
-        <label for="skipDrafts">Skip drafts</label>
-        <input type="checkbox" id="skipDrafts" name="skipDrafts" />
-    </div>
-    <div class="input-container">
-        <label for="ignoreAfterMonth">Ignore after x month old</label>
-        <input type="number" id="ignoreAfterMonth" name="ignoreAfterMonth" />
-    </div>
-    <div class="input-container">
-        <label for="requiredApprovals">Required approvals</label>
-        <input type="number" id="requiredApprovals" name="requiredApprovals" />
-    </div>
-    <div class="input-container">
-        <label for="facultativeApprovers">Facultative approvers (separate with a coma)</label>
-        <input type="text" id="facultativeApprovers" name="facultativeApprovers" />
+    <div class="input-container column">
+        <label for="projects">Projects</label>
+        <textarea id="projects" name="projects" rows="5"></textarea>
     </div>
     <div>
         <button id="button-reload">Reload extension</button>

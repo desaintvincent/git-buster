@@ -128,6 +128,7 @@ const ensureSidebarButton = () => {
     item.addEventListener('mouseleave', () => { item.style.filter = 'none' })
 
     item.addEventListener('click', e => {
+        console.log('====> click on button', syntheticPageVisible);
         e.preventDefault()
         syntheticPageVisible = !syntheticPageVisible
         if (syntheticPageVisible) { renderSyntheticPage() } else { removeSyntheticPage() }
@@ -180,6 +181,7 @@ const init = async () => {
 
     // Determine initial visibility from hash
     if (window.location.hash.replace('#','') === URL_ANCHOR) {
+        console.log('====> initial visible from url');
         syntheticPageVisible = true
     }
 
