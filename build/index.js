@@ -433,7 +433,7 @@
     ] }),
     /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team approval counts", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyApprovalReady, onChange: (e3) => setOnlyApprovalReady(e3.target.checked) }),
-      " Approvals ready"
+      " Approvers ready"
     ] }),
     /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team reviewer counts", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyReviewerReady, onChange: (e3) => setOnlyReviewerReady(e3.target.checked) }),
@@ -691,21 +691,20 @@
   var pipelineCell = (mr) => {
     const status = mr.head_pipeline?.status;
     if (!status) return "\u2013";
-    if (status === "success") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status success", title: "Pipeline succeeded", children: "\u2713" });
-    if (status === "failed") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status failed", title: "Pipeline failed", children: "\u2717" });
-    return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\u2022" });
+    if (status === "success") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status success", title: "Pipeline succeeded", children: "\\u2713" });
+    if (status === "failed") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status failed", title: "Pipeline failed", children: "\\u2717" });
+    return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\\u2022" });
   };
-  var reqCell = (mr, approvalsStatusByMr, reviewersStatusByMr) => {
-    const a3 = approvalsStatusByMr[mr.id];
-    const r3 = reviewersStatusByMr[mr.id];
-    if (!a3 && !r3) return "\u2013";
-    const readyBoth = !!a3?.ready && !!r3?.ready;
-    const cls = `gb-req-status ${readyBoth ? "ready" : "not-ready"}`;
-    return /* @__PURE__ */ u3("span", { className: cls, title: `Approvals: ${a3?.details || "n/a"}
-Reviewers: ${r3?.details || "n/a"}`, children: [
-      a3?.ready ? "A\u2713" : "A\u2717",
-      " ",
-      r3?.ready ? "R\u2713" : "R\u2717"
+  var reviewersCell = (reviewers, status) => {
+    return /* @__PURE__ */ u3("span", { className: "gb-inline-cell", children: [
+      reviewers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewers.length})`, className: "gb-avatar-stack", children: reviewers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Reviewer requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
+    ] });
+  };
+  var approversCell = (approvers, status) => {
+    return /* @__PURE__ */ u3("span", { className: "gb-inline-cell", children: [
+      approvers.length ? /* @__PURE__ */ u3("span", { title: `Approvers (${approvers.length})`, className: "gb-avatar-stack", children: approvers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Approver requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
     ] });
   };
   var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }) => {
@@ -726,8 +725,7 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
-          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
-          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Req" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvers" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
         ] }) }),
@@ -740,8 +738,8 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
             if (parts.includes(ticket)) return;
             setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket);
           };
-          const approvalsUsers = approvalsUsersByMr[mr.id] || [];
-          const reviewersUsers = reviewersUsersByMr[mr.id] || [];
+          const approvers = approvalsUsersByMr[mr.id] || [];
+          const reviewers = reviewersUsersByMr[mr.id] || [];
           return /* @__PURE__ */ u3("tr", { children: [
             /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
               /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
@@ -753,19 +751,18 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
                 /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
               ] }),
               /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
-                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\\ud83d\\udd0d" }),
                 /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
                   mr.source_branch,
-                  " \u2192 ",
+                  " \\u2192 ",
                   mr.target_branch
                 ] })
               ] })
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reqCell(mr, approvalsStatusByMr, reviewersStatusByMr) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -795,13 +792,12 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
-        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
-        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Req" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvers" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
       ] }) }),
       /* @__PURE__ */ u3("tbody", { children: groups.map((group) => /* @__PURE__ */ u3(k, { children: [
-        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 8, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
+        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 7, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
           /* @__PURE__ */ u3("span", { className: "gb-group-title", children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }),
           /* @__PURE__ */ u3("span", { className: "gb-group-latest", title: "Latest updated MR in this group", children: /* @__PURE__ */ u3(UpdatedDate, { iso: new Date(group.latestTs).toISOString() }) })
         ] }) }) }, `group-${group.key}`),
@@ -814,8 +810,8 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
             if (parts.includes(ticket)) return;
             setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket);
           };
-          const approvalsUsers = approvalsUsersByMr[mr.id] || [];
-          const reviewersUsers = reviewersUsersByMr[mr.id] || [];
+          const approvers = approvalsUsersByMr[mr.id] || [];
+          const reviewers = reviewersUsersByMr[mr.id] || [];
           return /* @__PURE__ */ u3("tr", { children: [
             /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
               /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
@@ -827,19 +823,18 @@ Reviewers: ${r3?.details || "n/a"}`, children: [
                 /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
               ] }),
               /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
-                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\\ud83d\\udd0d" }),
                 /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
                   mr.source_branch,
-                  " \u2192 ",
+                  " \\u2192 ",
                   mr.target_branch
                 ] })
               ] })
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reqCell(mr, approvalsStatusByMr, reviewersStatusByMr) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -1117,6 +1112,7 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
 .gb-req-status.ready { background:#2da160; border-color:#2da160; color:#fff; }
 .gb-req-status.not-ready { background:#ec5941; border-color:#ec5941; color:#fff; }
 @media (prefers-color-scheme: dark){ .gb-req-status.ready { background:#2da160; } .gb-req-status.not-ready { background:#ec5941; } }
+.gb-inline-cell { display:inline-flex; align-items:center; gap:4px; }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -1251,20 +1247,24 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       let reviewersReadyAll = true;
       const approvalsParts = [];
       const reviewersParts = [];
+      const approvalsCounts = [];
+      const reviewersCounts = [];
       for (const team of teamReqs) {
-        const aCount = team.members.filter((m3) => approvalsUsernames.includes(m3)).length;
+        const aCount = team.members.reduce((acc, m3) => acc + (approvalsUsernames.includes(m3) ? 1 : 0), 0);
         const aReq = team.approvalsRequired;
+        approvalsCounts.push({ team: team.name, have: aCount, need: aReq });
         approvalsParts.push(`${team.name}: ${aCount}/${aReq}`);
         if (aCount < aReq) approvalsReadyAll = false;
         const rReq = team.reviewersRequired ?? 0;
         if (rReq > 0) {
-          const rCount = team.members.filter((m3) => reviewersUsernames.includes(m3)).length;
+          const rCount = team.members.reduce((acc, m3) => acc + (reviewersUsernames.includes(m3) ? 1 : 0), 0);
+          reviewersCounts.push({ team: team.name, have: rCount, need: rReq });
           reviewersParts.push(`${team.name}: ${rCount}/${rReq}`);
           if (rCount < rReq) reviewersReadyAll = false;
         }
       }
-      approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(" | ") || "No team requirements" };
-      reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(" | ") || "No reviewer requirements" };
+      approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(" | ") || "No team requirements", teamCounts: approvalsCounts };
+      reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(" | ") || "No reviewer requirements", teamCounts: reviewersCounts };
     }
     const approvalFiltered = onlyApprovalReady ? approverFiltered.filter((mr) => approvalsStatusByMr[mr.id]?.ready) : approverFiltered;
     const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter((mr) => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered;
@@ -1331,7 +1331,6 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
   var loadOptions = async () => {
     const options2 = await chrome.storage.sync.get([EXTENSION_NAME]);
     const scoppedOptions = options2[EXTENSION_NAME] ?? {};
-    console.log("[git-buster] raw stored options", scoppedOptions);
     const parseProjects = (val) => {
       if (val == null) {
         return { error: "Missing projects configuration in extension options." };

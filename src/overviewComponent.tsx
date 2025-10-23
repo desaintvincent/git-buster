@@ -112,8 +112,8 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   }) : reviewerFiltered
   // After we have approval/reviewer maps compute team requirement statuses
   const teamReqs: TeamRequirement[] = (options.teamRequirements || []).map(t => ({ ...t, members: t.members.map(m => m.trim().toLowerCase()).filter(Boolean) }))
-  const approvalsStatusByMr: Record<number, { ready: boolean; details: string }> = {}
-  const reviewersStatusByMr: Record<number, { ready: boolean; details: string }> = {}
+  const approvalsStatusByMr: Record<number, { ready: boolean; details: string; teamCounts: Array<{ team: string; have: number; need: number }> }> = {}
+  const reviewersStatusByMr: Record<number, { ready: boolean; details: string; teamCounts: Array<{ team: string; have: number; need: number }> }> = {}
   for (const mr of projectFiltered) {
     const approvalsUsers = approvalsUsersByMr[mr.id] || []
     const reviewersUsers = reviewersUsersByMr[mr.id] || []
@@ -123,20 +123,24 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     let reviewersReadyAll = true
     const approvalsParts: string[] = []
     const reviewersParts: string[] = []
+    const approvalsCounts: Array<{ team: string; have: number; need: number }> = []
+    const reviewersCounts: Array<{ team: string; have: number; need: number }> = []
     for (const team of teamReqs) {
-      const aCount = team.members.filter(m => approvalsUsernames.includes(m)).length
+      const aCount = team.members.reduce((acc,m) => acc + (approvalsUsernames.includes(m) ? 1 : 0), 0)
       const aReq = team.approvalsRequired
+      approvalsCounts.push({ team: team.name, have: aCount, need: aReq })
       approvalsParts.push(`${team.name}: ${aCount}/${aReq}`)
       if (aCount < aReq) approvalsReadyAll = false
       const rReq = team.reviewersRequired ?? 0
       if (rReq > 0) {
-        const rCount = team.members.filter(m => reviewersUsernames.includes(m)).length
+        const rCount = team.members.reduce((acc,m) => acc + (reviewersUsernames.includes(m) ? 1 : 0), 0)
+        reviewersCounts.push({ team: team.name, have: rCount, need: rReq })
         reviewersParts.push(`${team.name}: ${rCount}/${rReq}`)
         if (rCount < rReq) reviewersReadyAll = false
       }
     }
-    approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No team requirements' }
-    reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(' | ') || 'No reviewer requirements' }
+    approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No team requirements', teamCounts: approvalsCounts }
+    reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(' | ') || 'No reviewer requirements', teamCounts: reviewersCounts }
   }
   const approvalFiltered = onlyApprovalReady ? approverFiltered.filter(mr => approvalsStatusByMr[mr.id]?.ready) : approverFiltered
   const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter(mr => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered

@@ -96,4 +96,5 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
 .gb-req-status.ready { background:#2da160; border-color:#2da160; color:#fff; }
 .gb-req-status.not-ready { background:#ec5941; border-color:#ec5941; color:#fff; }
 @media (prefers-color-scheme: dark){ .gb-req-status.ready { background:#2da160; } .gb-req-status.not-ready { background:#ec5941; } }
+.gb-inline-cell { display:inline-flex; align-items:center; gap:4px; }
 `;

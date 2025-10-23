@@ -22,7 +22,6 @@ const loadOptions = async (): Promise<Options> => {
     // @ts-ignore
     const options = await chrome.storage.sync.get([EXTENSION_NAME])
     const scoppedOptions = options[EXTENSION_NAME] ?? {}
-    console.log('[git-buster] raw stored options', scoppedOptions)
 
     const parseProjects = (val: any): { parsed?: any; error?: string } => {
         if (val == null) { return { error: 'Missing projects configuration in extension options.' } }

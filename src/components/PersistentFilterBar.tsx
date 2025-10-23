@@ -19,7 +19,7 @@ export const PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, s
       </select>
     </label>
     <label className="gb-filter-item" title="Show only MRs meeting all team approval counts">
-      <input type="checkbox" checked={onlyApprovalReady} onChange={e=>setOnlyApprovalReady((e.target as HTMLInputElement).checked)} /> Approvals ready
+      <input type="checkbox" checked={onlyApprovalReady} onChange={e=>setOnlyApprovalReady((e.target as HTMLInputElement).checked)} /> Approvers ready
     </label>
     <label className="gb-filter-item" title="Show only MRs meeting all team reviewer counts">
       <input type="checkbox" checked={onlyReviewerReady} onChange={e=>setOnlyReviewerReady((e.target as HTMLInputElement).checked)} /> Reviewers ready

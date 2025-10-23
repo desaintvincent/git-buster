@@ -10,18 +10,27 @@ interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>v
 const pipelineCell = (mr: MRWithProject) => {
   const status = mr.head_pipeline?.status
   if (!status) return '\u2013'
-  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">✓</span>
-  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">✗</span>
-  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>•</span>
+  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">\u2713</span>
+  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">\u2717</span>
+  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>\u2022</span>
 }
 
-const reqCell = (mr: MRWithProject, approvalsStatusByMr: Record<number,{ready:boolean;details:string}>, reviewersStatusByMr: Record<number,{ready:boolean;details:string}>) => {
-  const a = approvalsStatusByMr[mr.id]
-  const r = reviewersStatusByMr[mr.id]
-  if (!a && !r) return '\u2013'
-  const readyBoth = !!a?.ready && !!r?.ready
-  const cls = `gb-req-status ${readyBoth ? 'ready' : 'not-ready'}`
-  return <span className={cls} title={`Approvals: ${a?.details || 'n/a'}\nReviewers: ${r?.details || 'n/a'}`}>{a?.ready ? 'A\u2713' : 'A\u2717'} {r?.ready ? 'R\u2713' : 'R\u2717'}</span>
+const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string}|undefined) => {
+  return (
+    <span className="gb-inline-cell">
+      {reviewers.length ? <span title={`Reviewers (${reviewers.length})`} className="gb-avatar-stack">{reviewers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
+      {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Reviewer requirements: ${status.details}`}>{status.ready ? '\u2713':'\u2717'}</span>}
+    </span>
+  )
+}
+
+const approversCell = (approvers: User[], status: {ready:boolean;details:string}|undefined) => {
+  return (
+    <span className="gb-inline-cell">
+      {approvers.length ? <span title={`Approvers (${approvers.length})`} className="gb-avatar-stack">{approvers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
+      {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Approver requirements: ${status.details}`}>{status.ready ? '\u2713':'\u2717'}</span>}
+    </span>
+  )
 }
 
 export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }: Props) => {
@@ -46,10 +55,8 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
             <th className="gb-th">Title</th>
             <th className="gb-th">Project</th>
             <th className="gb-th">Author</th>
-            {/* Swapped order: Reviewers before Approvals */}
             <th className="gb-th gb-td-small">Reviewers</th>
-            <th className="gb-th gb-td-small">Approvals</th>
-            <th className="gb-th gb-td-small">Req</th>
+            <th className="gb-th gb-td-small">Approvers</th>
             <th className="gb-th gb-td-small">Pipeline</th>
             <th className="gb-th gb-td-small">{updatedHeader}</th>
           </tr>
@@ -64,8 +71,8 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
               if (parts.includes(ticket)) return
               setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket)
             }
-            const approvalsUsers = approvalsUsersByMr[mr.id] || []
-            const reviewersUsers = reviewersUsersByMr[mr.id] || []
+            const approvers = approvalsUsersByMr[mr.id] || []
+            const reviewers = reviewersUsersByMr[mr.id] || []
             return (
               <tr key={mr.id}>
                 <td className="gb-td">
@@ -76,17 +83,15 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                       <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
                     </div>
                     <div className="gb-mr-meta-line">
-                      <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                      <span className="gb-mr-branches">{mr.source_branch} → {mr.target_branch}</span>
+                      <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">\ud83d\udd0d</button>
+                      <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
                     </div>
                   </div>
                 </td>
                 <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                 <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                {/* Swapped cells: reviewers first */}
-                <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
-                <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
-                <td className="gb-td gb-td-small">{reqCell(mr, approvalsStatusByMr, reviewersStatusByMr)}</td>
+                <td className="gb-td gb-td-small">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
+                <td className="gb-td gb-td-small">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
                 <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                 <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
@@ -124,10 +129,8 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           <th className="gb-th">Title</th>
           <th className="gb-th">Project</th>
           <th className="gb-th">Author</th>
-          {/* Swapped order in group header too */}
           <th className="gb-th gb-td-small">Reviewers</th>
-          <th className="gb-th gb-td-small">Approvals</th>
-          <th className="gb-th gb-td-small">Req</th>
+          <th className="gb-th gb-td-small">Approvers</th>
           <th className="gb-th gb-td-small">Pipeline</th>
           <th className="gb-th gb-td-small">{updatedHeader}</th>
         </tr>
@@ -136,7 +139,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
         {groups.map(group => (
           <>
             <tr key={`group-${group.key}`} className="gb-group-row">
-              <td className="gb-group-cell" colSpan={8}>
+              <td className="gb-group-cell" colSpan={7}>
                 <div className="gb-group-header">
                   <span className="gb-group-title">{group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}</span>
                   <span className="gb-group-latest" title="Latest updated MR in this group"><UpdatedDate iso={new Date(group.latestTs).toISOString()} /></span>
@@ -152,8 +155,8 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 if (parts.includes(ticket)) return
                 setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket)
               }
-              const approvalsUsers = approvalsUsersByMr[mr.id] || []
-              const reviewersUsers = reviewersUsersByMr[mr.id] || []
+              const approvers = approvalsUsersByMr[mr.id] || []
+              const reviewers = reviewersUsersByMr[mr.id] || []
               return (
                 <tr key={mr.id}>
                   <td className="gb-td">
@@ -164,17 +167,15 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                         <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
                       </div>
                       <div className="gb-mr-meta-line">
-                        <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                        <span className="gb-mr-branches">{mr.source_branch} → {mr.target_branch}</span>
+                        <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">\ud83d\udd0d</button>
+                        <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
                       </div>
                     </div>
                   </td>
                   <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                   <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                  {/* Swapped cells: reviewers first */}
-                  <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
-                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
-                  <td className="gb-td gb-td-small">{reqCell(mr, approvalsStatusByMr, reviewersStatusByMr)}</td>
+                  <td className="gb-td gb-td-small">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
+                  <td className="gb-td gb-td-small">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
                   <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                   <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>
