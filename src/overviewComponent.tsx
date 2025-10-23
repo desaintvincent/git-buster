@@ -8,6 +8,7 @@ import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
 import { useReviewMeta } from './hooks/useReviewMeta'
 import { isHotfixMr, isDraftMr } from './utils/mrUtils'
 import { OVERVIEW_CSS } from './overviewStyles'
+import { usePageTitle } from './hooks/usePageTitle'
 
 interface OverviewProps { options: Options }
 
@@ -28,6 +29,9 @@ const loadFilters = (): PersistFilters => {
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
 const OverviewPage = ({ options }: OverviewProps) => {
+  // Set page title while overview is displayed
+  usePageTitle('Git Buster Overview')
+
   const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl)
   const [filter, setFilter] = useState('')
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
@@ -98,4 +102,9 @@ export const mountOverview = (container: HTMLElement, options: Options) => {
     document.head.appendChild(style)
   }
   render(<OverviewPage options={options} />, container)
+}
+
+export const unmountOverview = (container: HTMLElement) => {
+  // Trigger Preact unmount lifecycle (effects cleanup including page title restore)
+  render(null, container)
 }

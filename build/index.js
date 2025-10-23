@@ -787,13 +787,24 @@
 .gb-mt6 { margin-top:6px; }
 .gb-mr-title-block { display:flex; flex-direction:column; gap:2px; }
 .gb-mr-title-line { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.gb-mr-link { text-decoration:none; color:var(--gl-text-color, #222); font-weight:600; font-size:14px; line-height:20px; }
-.gb-mr-link:hover { text-decoration:underline; color:var(--gl-text-color, #222); }
+.gb-mr-link { text-decoration:none; color:#1f78d1; font-weight:500; font-size:14px; line-height:20px; }
+.gb-mr-link:hover { text-decoration:underline; color:#1f78d1; }
 .gb-mr-draft { background:none; padding:0; border-radius:0; color:#c17d10; font-weight:600; font-size:12px; }
 .gb-mr-meta-line { display:flex; align-items:center; gap:8px; font-size:11px; color:#6b6b6b; }
 .gb-mr-branches { font-family:monospace; font-size:11px; }
 .gb-mr-iid { font-size:12px; font-weight:500; color:#6b6b6b; }
 `;
+
+  // src/hooks/usePageTitle.ts
+  var usePageTitle = (title) => {
+    y2(() => {
+      const previous = document.title;
+      document.title = title;
+      return () => {
+        document.title = previous;
+      };
+    }, [title]);
+  };
 
   // src/overviewComponent.tsx
   var LS_FILTER_KEY = "gb_persistent_filters";
@@ -818,6 +829,7 @@
     }
   };
   var OverviewPage = ({ options: options2 }) => {
+    usePageTitle("Git Buster Overview");
     const { mrs, loading, error } = useProjectMergeRequests(options2.baseUrl);
     const [filter, setFilter] = d2("");
     const [hideDrafts, setHideDrafts] = d2(() => loadFilters().hideDrafts);
@@ -893,6 +905,9 @@
       document.head.appendChild(style);
     }
     G(/* @__PURE__ */ u3(OverviewPage, { options: options2 }), container);
+  };
+  var unmountOverview = (container) => {
+    G(null, container);
   };
 
   // src/index.ts
@@ -1044,6 +1059,7 @@
   var removeSyntheticPage = () => {
     const page = document.getElementById(EXT_PAGE_ID);
     if (page) {
+      unmountOverview(page);
       page.remove();
     }
     const main = getMainContentContainer();

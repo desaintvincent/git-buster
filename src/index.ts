@@ -7,6 +7,7 @@
 
 import { Options, MR, Approval, BADGE, TAG, colors, getBadge, displayBadge, addTag, getTags, isMrMine } from './types'
 import { mountOverview } from './overviewComponent'
+import { unmountOverview } from './overviewComponent'
 
 let options: Options
 
@@ -196,7 +197,11 @@ const getMainContentContainer = (): HTMLElement | null => {
 
 const removeSyntheticPage = () => {
     const page = document.getElementById(EXT_PAGE_ID)
-    if (page) { page.remove() }
+    if (page) {
+        // Ensure Preact unmount lifecycle runs (restores original page title)
+        unmountOverview(page)
+        page.remove()
+    }
     const main = getMainContentContainer()
     if (main) { main.style.display = '' }
 }
