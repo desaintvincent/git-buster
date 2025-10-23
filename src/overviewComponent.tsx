@@ -15,14 +15,36 @@ interface OverviewProps { options: Options; initialVisible: boolean }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
 const LS_PROJECT_GROUP_KEY = 'gb_project_group'
-interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean; pipelineStatus: 'all'|'success'|'failed'; onlyApprovalReady: boolean; onlyReviewerReady: boolean }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean; pipelineStatus: 'all'|'success'|'failed'; approvalReadyFilter: 'all'|'ready'|'not_ready'; reviewerReadyFilter: 'all'|'ready'|'not_ready' }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', onlyApprovalReady: false, onlyReviewerReady: false }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', approvalReadyFilter: 'all', reviewerReadyFilter: 'all' }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === 'success' || parsed.pipelineStatus === 'failed' ? parsed.pipelineStatus : 'all', onlyApprovalReady: !!parsed.onlyApprovalReady, onlyReviewerReady: !!parsed.onlyReviewerReady }
-  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', onlyApprovalReady: false, onlyReviewerReady: false } }
+    // Backward compatibility: older version stored booleans onlyApprovalReady/onlyReviewerReady
+    const approvalReadyFilter: 'all'|'ready'|'not_ready' = (() => {
+      if (parsed.approvalReadyFilter === 'ready' || parsed.approvalReadyFilter === 'not_ready') return parsed.approvalReadyFilter
+      if (parsed.approvalReadyFilter === 'all') return 'all'
+      if (typeof parsed.onlyApprovalReady === 'boolean') return parsed.onlyApprovalReady ? 'ready' : 'all'
+      return 'all'
+    })()
+    const reviewerReadyFilter: 'all'|'ready'|'not_ready' = (() => {
+      if (parsed.reviewerReadyFilter === 'ready' || parsed.reviewerReadyFilter === 'not_ready') return parsed.reviewerReadyFilter
+      if (parsed.reviewerReadyFilter === 'all') return 'all'
+      if (typeof parsed.onlyReviewerReady === 'boolean') return parsed.onlyReviewerReady ? 'ready' : 'all'
+      return 'all'
+    })()
+    return {
+      hideDrafts: !!parsed.hideDrafts,
+      onlyHotfixes: !!parsed.onlyHotfixes,
+      groupByTicket: !!parsed.groupByTicket,
+      pipelineStatus: parsed.pipelineStatus === 'success' || parsed.pipelineStatus === 'failed' ? parsed.pipelineStatus : 'all',
+      approvalReadyFilter,
+      reviewerReadyFilter
+    }
+  } catch {
+    return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', approvalReadyFilter: 'all', reviewerReadyFilter: 'all' }
+  }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
@@ -52,9 +74,9 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
   const [invertAuthor, setInvertAuthor] = useState<boolean>(false)
-  const [onlyApprovalReady, setOnlyApprovalReady] = useState<boolean>(() => loadFilters().onlyApprovalReady)
-  const [onlyReviewerReady, setOnlyReviewerReady] = useState<boolean>(() => loadFilters().onlyReviewerReady)
-  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady])
+  const [approvalReadyFilter, setApprovalReadyFilter] = useState<'all'|'ready'|'not_ready'>(() => loadFilters().approvalReadyFilter)
+  const [reviewerReadyFilter, setReviewerReadyFilter] = useState<'all'|'ready'|'not_ready'>(() => loadFilters().reviewerReadyFilter)
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter])
 
   // Page title only while visible
   usePageTitle(visible ? 'Git Buster Overview' : document.title)
@@ -142,8 +164,13 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No team requirements', teamCounts: approvalsCounts }
     reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(' | ') || 'No reviewer requirements', teamCounts: reviewersCounts }
   }
-  const approvalFiltered = onlyApprovalReady ? approverFiltered.filter(mr => approvalsStatusByMr[mr.id]?.ready) : approverFiltered
-  const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter(mr => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered
+  const applyReadyFilter = (list: typeof approverFiltered, statusMap: Record<number,{ready:boolean}>, mode: 'all'|'ready'|'not_ready') => {
+    if (mode === 'ready') return list.filter(mr => statusMap[mr.id]?.ready)
+    if (mode === 'not_ready') return list.filter(mr => statusMap[mr.id] && !statusMap[mr.id].ready)
+    return list
+  }
+  const approvalFiltered = applyReadyFilter(approverFiltered, approvalsStatusByMr, approvalReadyFilter)
+  const reviewerReadyFiltered = applyReadyFilter(approvalFiltered, reviewersStatusByMr, reviewerReadyFilter)
   // Apply author filter last (replace previous authorFiltered definition)
   const authorFiltered = selectedAuthor
     ? (selectedAuthor === NOT_ME && options.username
@@ -169,7 +196,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
           </select>
         </label>
       </div>
-      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} onlyApprovalReady={onlyApprovalReady} setOnlyApprovalReady={setOnlyApprovalReady} onlyReviewerReady={onlyReviewerReady} setOnlyReviewerReady={setOnlyReviewerReady} />
+      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} approvalReadyFilter={approvalReadyFilter} setApprovalReadyFilter={setApprovalReadyFilter} reviewerReadyFilter={reviewerReadyFilter} setReviewerReadyFilter={setReviewerReadyFilter} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />

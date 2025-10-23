@@ -410,7 +410,7 @@
   }
 
   // src/components/PersistentFilterBar.tsx
-  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, onlyApprovalReady, setOnlyApprovalReady, onlyReviewerReady, setOnlyReviewerReady }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, approvalReadyFilter, setApprovalReadyFilter, reviewerReadyFilter, setReviewerReadyFilter }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3("label", { title: "Draft: GitLab draft/WIP flag or title starts with draft:/wip:", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
       " Hide draft MRs"
@@ -431,13 +431,21 @@
         /* @__PURE__ */ u3("option", { value: "failed", children: "Failed" })
       ] })
     ] }),
-    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team approval counts", children: [
-      /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyApprovalReady, onChange: (e3) => setOnlyApprovalReady(e3.target.checked) }),
-      " Approvers ready"
+    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Filter by readiness of team approval requirements", children: [
+      /* @__PURE__ */ u3("span", { children: "Approvers:" }),
+      /* @__PURE__ */ u3("select", { value: approvalReadyFilter, onChange: (e3) => setApprovalReadyFilter(e3.target.value), className: "gb-pipeline-select", children: [
+        /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+        /* @__PURE__ */ u3("option", { value: "ready", children: "Ready" }),
+        /* @__PURE__ */ u3("option", { value: "not_ready", children: "Not ready" })
+      ] })
     ] }),
-    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team reviewer counts", children: [
-      /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyReviewerReady, onChange: (e3) => setOnlyReviewerReady(e3.target.checked) }),
-      " Reviewers ready"
+    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Filter by readiness of team reviewer requirements", children: [
+      /* @__PURE__ */ u3("span", { children: "Reviewers:" }),
+      /* @__PURE__ */ u3("select", { value: reviewerReadyFilter, onChange: (e3) => setReviewerReadyFilter(e3.target.value), className: "gb-pipeline-select", children: [
+        /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+        /* @__PURE__ */ u3("option", { value: "ready", children: "Ready" }),
+        /* @__PURE__ */ u3("option", { value: "not_ready", children: "Not ready" })
+      ] })
     ] })
   ] });
 
@@ -1132,11 +1140,30 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
-      if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", onlyApprovalReady: false, onlyReviewerReady: false };
+      if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", approvalReadyFilter: "all", reviewerReadyFilter: "all" };
       const parsed = JSON.parse(raw);
-      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === "success" || parsed.pipelineStatus === "failed" ? parsed.pipelineStatus : "all", onlyApprovalReady: !!parsed.onlyApprovalReady, onlyReviewerReady: !!parsed.onlyReviewerReady };
+      const approvalReadyFilter = (() => {
+        if (parsed.approvalReadyFilter === "ready" || parsed.approvalReadyFilter === "not_ready") return parsed.approvalReadyFilter;
+        if (parsed.approvalReadyFilter === "all") return "all";
+        if (typeof parsed.onlyApprovalReady === "boolean") return parsed.onlyApprovalReady ? "ready" : "all";
+        return "all";
+      })();
+      const reviewerReadyFilter = (() => {
+        if (parsed.reviewerReadyFilter === "ready" || parsed.reviewerReadyFilter === "not_ready") return parsed.reviewerReadyFilter;
+        if (parsed.reviewerReadyFilter === "all") return "all";
+        if (typeof parsed.onlyReviewerReady === "boolean") return parsed.onlyReviewerReady ? "ready" : "all";
+        return "all";
+      })();
+      return {
+        hideDrafts: !!parsed.hideDrafts,
+        onlyHotfixes: !!parsed.onlyHotfixes,
+        groupByTicket: !!parsed.groupByTicket,
+        pipelineStatus: parsed.pipelineStatus === "success" || parsed.pipelineStatus === "failed" ? parsed.pipelineStatus : "all",
+        approvalReadyFilter,
+        reviewerReadyFilter
+      };
     } catch {
-      return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", onlyApprovalReady: false, onlyReviewerReady: false };
+      return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", approvalReadyFilter: "all", reviewerReadyFilter: "all" };
     }
   };
   var saveFilters = (f4) => {
@@ -1185,11 +1212,11 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     const [sortDirection, setSortDirection] = d2("desc");
     const [invertAuthor, setInvertAuthor] = d2(false);
-    const [onlyApprovalReady, setOnlyApprovalReady] = d2(() => loadFilters().onlyApprovalReady);
-    const [onlyReviewerReady, setOnlyReviewerReady] = d2(() => loadFilters().onlyReviewerReady);
+    const [approvalReadyFilter, setApprovalReadyFilter] = d2(() => loadFilters().approvalReadyFilter);
+    const [reviewerReadyFilter, setReviewerReadyFilter] = d2(() => loadFilters().reviewerReadyFilter);
     y2(() => {
-      saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady });
-    }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady]);
+      saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter });
+    }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter]);
     usePageTitle(visible ? "Git Buster Overview" : document.title);
     y2(() => {
       const main = document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
@@ -1266,8 +1293,13 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(" | ") || "No team requirements", teamCounts: approvalsCounts };
       reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(" | ") || "No reviewer requirements", teamCounts: reviewersCounts };
     }
-    const approvalFiltered = onlyApprovalReady ? approverFiltered.filter((mr) => approvalsStatusByMr[mr.id]?.ready) : approverFiltered;
-    const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter((mr) => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered;
+    const applyReadyFilter = (list, statusMap, mode) => {
+      if (mode === "ready") return list.filter((mr) => statusMap[mr.id]?.ready);
+      if (mode === "not_ready") return list.filter((mr) => statusMap[mr.id] && !statusMap[mr.id].ready);
+      return list;
+    };
+    const approvalFiltered = applyReadyFilter(approverFiltered, approvalsStatusByMr, approvalReadyFilter);
+    const reviewerReadyFiltered = applyReadyFilter(approvalFiltered, reviewersStatusByMr, reviewerReadyFilter);
     const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username === options2.username : mr.author?.username !== options2.username) : reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor : mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : reviewerReadyFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = authorFiltered.filter(isHotfixMr).length;
@@ -1282,7 +1314,7 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
-      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, onlyApprovalReady, setOnlyApprovalReady, onlyReviewerReady, setOnlyReviewerReady }),
+      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, approvalReadyFilter, setApprovalReadyFilter, reviewerReadyFilter, setReviewerReadyFilter }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading, invertAuthor, setInvertAuthor }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),

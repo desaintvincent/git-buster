@@ -36,10 +36,14 @@ Clicking the button toggles a synthetic overview page that replaces the main con
 - A table of the currently listed merge requests
 - Calculated tags and their badges
 - A consolidated badge per MR
-- Persistent local filters: "Hide draft MRs", "Only hotfix MRs", and Author scope (All / Mine / Others)
-- Ephemeral author filter (autocomplete): ad-hoc text/datalist filter by username or full name; disabled when persistent Author scope is set to Mine; not stored across reloads.
+- Persistent local filters: Drafts, Hotfixes, Ticket grouping, Pipeline status, readiness filters (Approvers / Reviewers), and Author scope (All / Mine / Others)
+- Readiness filters are tri-state selects:
+  - Approvers: All | Ready | Not ready
+  - Reviewers: All | Ready | Not ready
+  Selecting Ready shows only MRs meeting all team counts; Not ready shows those missing at least one required approval/reviewer count.
+- Ephemeral filters: project, author, reviewer, approver (with invert toggles) that are not stored across reloads.
 - Per-MR magnifying glass button: if the MR title contains a JIRA-like ticket (e.g. ABC-123), clicking adds it to the title filter without duplication; disabled if no ticket pattern is found.
-- Per-MR columns include Approvals (count of approved_by) and Reviewers (unique non-author users who either approved or left a non-system comment; tooltip lists names).
+- Per-MR columns include Approvals (count of approved_by) and Reviewers (unique non-author users who either approved or left a non-system comment; tooltip lists names). Each has a ✓ (ready) or ✗ (not ready) badge with a tooltip detailing team counts.
 - Review meta (approvals & reviewers) is cached per MR until its `updated_at` changes. Fetches occur in small batches (default 5). A "Refresh review meta" button clears cached entries for currently visible MRs and refetches them incrementally.
 
 Hotfix definition (overview page filter):
@@ -54,7 +58,7 @@ Edge cases & notes:
 - The button reappears automatically after GitLab SPA navigations if it's removed.
 - Draft MRs and old MRs are filtered out according to your settings (`skipDrafts`, `ignoreAfterMonth`).
 - The page is purely client-side; no additional permissions were added beyond existing API calls.
-- Hotfix filter persists between page loads using `localStorage`.
+- Hotfix, ticket grouping, pipeline status, readiness and author scope filters persist between page loads using `localStorage` (older versions stored booleans for readiness; these are migrated automatically to the new tri-state values).
 - Author filter persists between page loads. "Mine" / "Others" are disabled if no `username` is configured.
 
 Configuration reminders (via the popup/options):
