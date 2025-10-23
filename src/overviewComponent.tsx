@@ -45,6 +45,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [groupByTicket, setGroupByTicket] = useState<boolean>(() => loadFilters().groupByTicket)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
+  const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket }) }, [hideDrafts, onlyHotfixes, groupByTicket])
 
   // Page title only while visible
@@ -119,7 +120,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         {loading && <div className="gb-sub">Loading merge requests…</div>}
         {error && !loading && <div className="gb-error">Failed to load: {error}</div>}
         {!loading && !error && !authorFiltered.length && <div className="gb-sub">No opened merge requests found.</div>}
-        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} groupByTicket={groupByTicket} />}
+        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} groupByTicket={groupByTicket} sortDirection={sortDirection} setSortDirection={setSortDirection} />}
         {reviewMetaLoading && !!authorFiltered.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
       </div>
     </div>

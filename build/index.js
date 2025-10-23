@@ -493,7 +493,17 @@
   };
 
   // src/components/MergeRequestsTable.tsx
-  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket }) => {
+  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }) => {
+    const sortedMrs = [...mrs].sort((a3, b) => {
+      const da = new Date(a3.updated_at).getTime();
+      const db = new Date(b.updated_at).getTime();
+      return sortDirection === "asc" ? da - db : db - da;
+    });
+    const toggleSort = () => setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    const updatedHeader = /* @__PURE__ */ u3("button", { type: "button", className: "gb-sortable", onClick: toggleSort, title: "Sort by updated date", children: [
+      "Updated ",
+      /* @__PURE__ */ u3("span", { className: "gb-sort-indicator", children: sortDirection === "asc" ? "\u25B2" : "\u25BC" })
+    ] });
     if (!groupByTicket) {
       return /* @__PURE__ */ u3("table", { className: "gb-table", children: [
         /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
@@ -502,9 +512,9 @@
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
-          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Updated" })
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
         ] }) }),
-        /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
+        /* @__PURE__ */ u3("tbody", { children: sortedMrs.map((mr) => {
           const ticket = extractJiraTicket(mr.title);
           const disabled = !ticket;
           const addTicket = () => {
@@ -544,27 +554,24 @@
       ] });
     }
     const groupMap = /* @__PURE__ */ new Map();
-    for (const mr of mrs) {
+    for (const mr of sortedMrs) {
       const ticket = extractJiraTicket(mr.title);
       const key = ticket || "__NO_TICKET__";
       if (!groupMap.has(key)) {
-        groupMap.set(key, { key, ticket, items: [] });
+        groupMap.set(key, { key, ticket, items: [], latestTs: 0 });
       }
-      groupMap.get(key).items.push(mr);
+      const g2 = groupMap.get(key);
+      g2.items.push(mr);
+      const ts = new Date(mr.updated_at).getTime();
+      if (ts > g2.latestTs) g2.latestTs = ts;
     }
-    const groups = [];
-    const ticketGroups = [];
-    let noTicketGroup;
-    for (const g2 of groupMap.values()) {
-      if (g2.ticket) {
-        ticketGroups.push(g2);
-      } else {
-        noTicketGroup = g2;
-      }
-    }
-    ticketGroups.sort((a3, b) => a3.ticket.localeCompare(b.ticket));
-    groups.push(...ticketGroups);
-    if (noTicketGroup) groups.push(noTicketGroup);
+    const groups = Array.from(groupMap.values());
+    groups.sort((a3, b) => sortDirection === "asc" ? a3.latestTs - b.latestTs : b.latestTs - a3.latestTs);
+    groups.forEach((g2) => g2.items.sort((a3, b) => {
+      const da = new Date(a3.updated_at).getTime();
+      const db = new Date(b.updated_at).getTime();
+      return sortDirection === "asc" ? da - db : db - da;
+    }));
     return /* @__PURE__ */ u3("table", { className: "gb-table", children: [
       /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
@@ -572,10 +579,13 @@
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
-        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Updated" })
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
       ] }) }),
       /* @__PURE__ */ u3("tbody", { children: groups.map((group) => /* @__PURE__ */ u3(k, { children: [
-        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 6, children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }) }, `group-${group.key}`),
+        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 6, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
+          /* @__PURE__ */ u3("span", { className: "gb-group-title", children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }),
+          /* @__PURE__ */ u3("span", { className: "gb-group-latest", title: "Latest updated MR in this group", children: formatUpdatedAt(new Date(group.latestTs).toISOString()) })
+        ] }) }) }, `group-${group.key}`),
         group.items.map((mr) => {
           const ticket = extractJiraTicket(mr.title);
           const disabled = !ticket;
@@ -825,6 +835,14 @@ body[data-theme='dark'] .gb-group-row .gb-group-cell,
 body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5; border-top:2px solid #555; }
 /* Extra separation between successive groups */
 .gb-group-row + .gb-group-row .gb-group-cell { border-top:3px solid #444; }
+.gb-sortable { background:none; border:none; padding:0; cursor:pointer; font:inherit; color:inherit; display:inline-flex; align-items:center; gap:4px; font-weight:600; }
+.gb-sortable .gb-sort-indicator { font-size:10px; opacity:.8; }
+.gb-sortable:hover .gb-sort-indicator { opacity:1; }
+.gb-group-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.gb-group-title { font-weight:600; }
+.gb-group-latest { font-size:11px; opacity:.75; font-family:monospace; }
+@media (prefers-color-scheme: dark) { .gb-group-latest { opacity:.85; } }
+body[data-theme='dark'] .gb-group-latest, body.theme-dark .gb-group-latest { opacity:.85; }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -890,6 +908,7 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
     const [groupByTicket, setGroupByTicket] = d2(() => loadFilters().groupByTicket);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
+    const [sortDirection, setSortDirection] = d2("desc");
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, groupByTicket });
     }, [hideDrafts, onlyHotfixes, groupByTicket]);
@@ -961,7 +980,7 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
           error
         ] }),
         !loading && !error && !authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
-        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket }),
+        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }),
         reviewMetaLoading && !!authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });

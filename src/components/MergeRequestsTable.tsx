@@ -4,10 +4,22 @@ import { UserAvatar } from '../UserAvatar'
 import { extractJiraTicket, formatUpdatedAt, isDraftMr } from '../utils/mrUtils'
 
 export interface MRWithProject extends MR { projectPath: string }
-interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; groupByTicket: boolean }
+interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
 
-export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket }: Props) => {
-  // Decide grouping
+export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }: Props) => {
+  const sortedMrs = [...mrs].sort((a,b) => {
+    const da = new Date(a.updated_at).getTime();
+    const db = new Date(b.updated_at).getTime();
+    return sortDirection === 'asc' ? da - db : db - da
+  })
+
+  const toggleSort = () => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+  const updatedHeader = (
+    <button type="button" className="gb-sortable" onClick={toggleSort} title="Sort by updated date">
+      Updated <span className="gb-sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+    </button>
+  )
+
   if (!groupByTicket) {
     return (
       <table className="gb-table">
@@ -18,11 +30,11 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
             <th className="gb-th">Author</th>
             <th className="gb-th gb-td-small">Approvals</th>
             <th className="gb-th gb-td-small">Reviewers</th>
-            <th className="gb-th gb-td-small">Updated</th>
+            <th className="gb-th gb-td-small">{updatedHeader}</th>
           </tr>
         </thead>
         <tbody>
-          {mrs.map(mr => {
+          {sortedMrs.map(mr => {
             const ticket = extractJiraTicket(mr.title)
             const disabled = !ticket
             const addTicket = () => {
@@ -62,30 +74,27 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
   }
 
   // Group by JIRA ticket (uppercase) or __NO_TICKET__ sentinel
-  type Group = { key: string; ticket: string | null; items: MRWithProject[] }
+  type Group = { key: string; ticket: string | null; items: MRWithProject[]; latestTs: number }
   const groupMap = new Map<string, Group>()
-  for (const mr of mrs) {
+  for (const mr of sortedMrs) { // already sorted, but we'll compute latestTs explicitly
     const ticket = extractJiraTicket(mr.title)
     const key = ticket || '__NO_TICKET__'
     if (!groupMap.has(key)) {
-      groupMap.set(key, { key, ticket, items: [] })
+      groupMap.set(key, { key, ticket, items: [], latestTs: 0 })
     }
-    groupMap.get(key)!.items.push(mr)
+    const g = groupMap.get(key)!
+    g.items.push(mr)
+    const ts = new Date(mr.updated_at).getTime()
+    if (ts > g.latestTs) g.latestTs = ts
   }
-  const groups: Group[] = []
-  // Separate ticket groups and no-ticket group for ordering
-  const ticketGroups: Group[] = []
-  let noTicketGroup: Group | undefined
-  for (const g of groupMap.values()) {
-    if (g.ticket) {
-        ticketGroups.push(g)
-    } else {
-        noTicketGroup = g
-    }
-  }
-  ticketGroups.sort((a,b) => a.ticket!.localeCompare(b.ticket!))
-  groups.push(...ticketGroups)
-  if (noTicketGroup) groups.push(noTicketGroup)
+  const groups: Group[] = Array.from(groupMap.values())
+  groups.sort((a,b) => sortDirection === 'asc' ? a.latestTs - b.latestTs : b.latestTs - a.latestTs)
+  // Sort MRs inside each group by updated according to sortDirection
+  groups.forEach(g => g.items.sort((a,b) => {
+    const da = new Date(a.updated_at).getTime();
+    const db = new Date(b.updated_at).getTime();
+    return sortDirection === 'asc' ? da - db : db - da
+  }))
 
   return (
     <table className="gb-table">
@@ -96,7 +105,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           <th className="gb-th">Author</th>
           <th className="gb-th gb-td-small">Approvals</th>
           <th className="gb-th gb-td-small">Reviewers</th>
-          <th className="gb-th gb-td-small">Updated</th>
+          <th className="gb-th gb-td-small">{updatedHeader}</th>
         </tr>
       </thead>
       <tbody>
@@ -104,7 +113,10 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           <>
             <tr key={`group-${group.key}`} className="gb-group-row">
               <td className="gb-group-cell" colSpan={6}>
-                {group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}
+                <div className="gb-group-header">
+                  <span className="gb-group-title">{group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}</span>
+                  <span className="gb-group-latest" title="Latest updated MR in this group">{formatUpdatedAt(new Date(group.latestTs).toISOString())}</span>
+                </div>
               </td>
             </tr>
             {group.items.map(mr => {
