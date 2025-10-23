@@ -5,7 +5,7 @@ import { extractJiraTicket, isDraftMr } from '../utils/mrUtils'
 import { UpdatedDate } from './UpdatedDate'
 
 export interface MRWithProject extends MR { projectPath: string }
-interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
+interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; approvalsStatusByMr: Record<number,{ready:boolean;details:string}>; reviewersStatusByMr: Record<number,{ready:boolean;details:string}>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
 
 const pipelineCell = (mr: MRWithProject) => {
   const status = mr.head_pipeline?.status
@@ -15,7 +15,16 @@ const pipelineCell = (mr: MRWithProject) => {
   return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>•</span>
 }
 
-export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }: Props) => {
+const reqCell = (mr: MRWithProject, approvalsStatusByMr: Record<number,{ready:boolean;details:string}>, reviewersStatusByMr: Record<number,{ready:boolean;details:string}>) => {
+  const a = approvalsStatusByMr[mr.id]
+  const r = reviewersStatusByMr[mr.id]
+  if (!a && !r) return '\u2013'
+  const readyBoth = !!a?.ready && !!r?.ready
+  const cls = `gb-req-status ${readyBoth ? 'ready' : 'not-ready'}`
+  return <span className={cls} title={`Approvals: ${a?.details || 'n/a'}\nReviewers: ${r?.details || 'n/a'}`}>{a?.ready ? 'A\u2713' : 'A\u2717'} {r?.ready ? 'R\u2713' : 'R\u2717'}</span>
+}
+
+export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }: Props) => {
   const sortedMrs = [...mrs].sort((a,b) => {
     const da = new Date(a.updated_at).getTime();
     const db = new Date(b.updated_at).getTime();
@@ -40,6 +49,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
             {/* Swapped order: Reviewers before Approvals */}
             <th className="gb-th gb-td-small">Reviewers</th>
             <th className="gb-th gb-td-small">Approvals</th>
+            <th className="gb-th gb-td-small">Req</th>
             <th className="gb-th gb-td-small">Pipeline</th>
             <th className="gb-th gb-td-small">{updatedHeader}</th>
           </tr>
@@ -76,6 +86,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 {/* Swapped cells: reviewers first */}
                 <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
                 <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                <td className="gb-td gb-td-small">{reqCell(mr, approvalsStatusByMr, reviewersStatusByMr)}</td>
                 <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                 <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
@@ -116,6 +127,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           {/* Swapped order in group header too */}
           <th className="gb-th gb-td-small">Reviewers</th>
           <th className="gb-th gb-td-small">Approvals</th>
+          <th className="gb-th gb-td-small">Req</th>
           <th className="gb-th gb-td-small">Pipeline</th>
           <th className="gb-th gb-td-small">{updatedHeader}</th>
         </tr>
@@ -124,7 +136,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
         {groups.map(group => (
           <>
             <tr key={`group-${group.key}`} className="gb-group-row">
-              <td className="gb-group-cell" colSpan={7}>
+              <td className="gb-group-cell" colSpan={8}>
                 <div className="gb-group-header">
                   <span className="gb-group-title">{group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}</span>
                   <span className="gb-group-latest" title="Latest updated MR in this group"><UpdatedDate iso={new Date(group.latestTs).toISOString()} /></span>
@@ -162,6 +174,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                   {/* Swapped cells: reviewers first */}
                   <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
                   <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                  <td className="gb-td gb-td-small">{reqCell(mr, approvalsStatusByMr, reviewersStatusByMr)}</td>
                   <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                   <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>

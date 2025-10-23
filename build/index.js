@@ -410,7 +410,7 @@
   }
 
   // src/components/PersistentFilterBar.tsx
-  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, onlyApprovalReady, setOnlyApprovalReady, onlyReviewerReady, setOnlyReviewerReady }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3("label", { title: "Draft: GitLab draft/WIP flag or title starts with draft:/wip:", className: "gb-filter-item", children: [
       /* @__PURE__ */ u3("input", { type: "checkbox", checked: hideDrafts, onChange: (e3) => setHideDrafts(e3.target.checked) }),
       " Hide draft MRs"
@@ -430,6 +430,14 @@
         /* @__PURE__ */ u3("option", { value: "success", children: "Success" }),
         /* @__PURE__ */ u3("option", { value: "failed", children: "Failed" })
       ] })
+    ] }),
+    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team approval counts", children: [
+      /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyApprovalReady, onChange: (e3) => setOnlyApprovalReady(e3.target.checked) }),
+      " Approvals ready"
+    ] }),
+    /* @__PURE__ */ u3("label", { className: "gb-filter-item", title: "Show only MRs meeting all team reviewer counts", children: [
+      /* @__PURE__ */ u3("input", { type: "checkbox", checked: onlyReviewerReady, onChange: (e3) => setOnlyReviewerReady(e3.target.checked) }),
+      " Reviewers ready"
     ] })
   ] });
 
@@ -687,7 +695,20 @@
     if (status === "failed") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status failed", title: "Pipeline failed", children: "\u2717" });
     return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\u2022" });
   };
-  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }) => {
+  var reqCell = (mr, approvalsStatusByMr, reviewersStatusByMr) => {
+    const a3 = approvalsStatusByMr[mr.id];
+    const r3 = reviewersStatusByMr[mr.id];
+    if (!a3 && !r3) return "\u2013";
+    const readyBoth = !!a3?.ready && !!r3?.ready;
+    const cls = `gb-req-status ${readyBoth ? "ready" : "not-ready"}`;
+    return /* @__PURE__ */ u3("span", { className: cls, title: `Approvals: ${a3?.details || "n/a"}
+Reviewers: ${r3?.details || "n/a"}`, children: [
+      a3?.ready ? "A\u2713" : "A\u2717",
+      " ",
+      r3?.ready ? "R\u2713" : "R\u2717"
+    ] });
+  };
+  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }) => {
     const sortedMrs = [...mrs].sort((a3, b) => {
       const da = new Date(a3.updated_at).getTime();
       const db = new Date(b.updated_at).getTime();
@@ -706,6 +727,7 @@
           /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
+          /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Req" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
           /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
         ] }) }),
@@ -743,6 +765,7 @@
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reqCell(mr, approvalsStatusByMr, reviewersStatusByMr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -773,11 +796,12 @@
         /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Req" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Pipeline" }),
         /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: updatedHeader })
       ] }) }),
       /* @__PURE__ */ u3("tbody", { children: groups.map((group) => /* @__PURE__ */ u3(k, { children: [
-        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 7, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
+        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 8, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
           /* @__PURE__ */ u3("span", { className: "gb-group-title", children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }),
           /* @__PURE__ */ u3("span", { className: "gb-group-latest", title: "Latest updated MR in this group", children: /* @__PURE__ */ u3(UpdatedDate, { iso: new Date(group.latestTs).toISOString() }) })
         ] }) }) }, `group-${group.key}`),
@@ -815,6 +839,7 @@
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reqCell(mr, approvalsStatusByMr, reviewersStatusByMr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -1087,6 +1112,11 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 .gb-avatar-invert-marker { position:absolute; top:-3px; right:-3px; background:#fff; color:#ec5941; font-size:10px; line-height:1; padding:1px 3px; border:1px solid #ec5941; border-radius:8px; box-shadow:0 0 2px rgba(0,0,0,.25); }
 @media (prefers-color-scheme: dark){ .gb-avatar-invert-marker { background:#333238; } }
 body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-invert-marker { background:#333238; }
+.gb-req-status { font-size:10px; font-family:monospace; padding:2px 4px; border:1px solid #bbb; border-radius:4px; display:inline-block; background:#f5f5f5; }
+.gb-req-status { white-space:nowrap; }
+.gb-req-status.ready { background:#2da160; border-color:#2da160; color:#fff; }
+.gb-req-status.not-ready { background:#ec5941; border-color:#ec5941; color:#fff; }
+@media (prefers-color-scheme: dark){ .gb-req-status.ready { background:#2da160; } .gb-req-status.not-ready { background:#ec5941; } }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -1106,11 +1136,11 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
   var loadFilters = () => {
     try {
       const raw = localStorage.getItem(LS_FILTER_KEY);
-      if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all" };
+      if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", onlyApprovalReady: false, onlyReviewerReady: false };
       const parsed = JSON.parse(raw);
-      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === "success" || parsed.pipelineStatus === "failed" ? parsed.pipelineStatus : "all" };
+      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === "success" || parsed.pipelineStatus === "failed" ? parsed.pipelineStatus : "all", onlyApprovalReady: !!parsed.onlyApprovalReady, onlyReviewerReady: !!parsed.onlyReviewerReady };
     } catch {
-      return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all" };
+      return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: "all", onlyApprovalReady: false, onlyReviewerReady: false };
     }
   };
   var saveFilters = (f4) => {
@@ -1159,9 +1189,11 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     const [sortDirection, setSortDirection] = d2("desc");
     const [invertAuthor, setInvertAuthor] = d2(false);
+    const [onlyApprovalReady, setOnlyApprovalReady] = d2(() => loadFilters().onlyApprovalReady);
+    const [onlyReviewerReady, setOnlyReviewerReady] = d2(() => loadFilters().onlyReviewerReady);
     y2(() => {
-      saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus });
-    }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus]);
+      saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady });
+    }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady]);
     usePageTitle(visible ? "Git Buster Overview" : document.title);
     y2(() => {
       const main = document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
@@ -1207,7 +1239,36 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       const has = approvers.some((u4) => u4.username === selectedApprover);
       return invertApprover ? !has : has;
     }) : reviewerFiltered;
-    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? approverFiltered.filter((mr) => invertAuthor ? mr.author?.username === options2.username : mr.author?.username !== options2.username) : approverFiltered.filter((mr) => invertAuthor ? mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor : mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : approverFiltered;
+    const teamReqs = (options2.teamRequirements || []).map((t3) => ({ ...t3, members: t3.members.map((m3) => m3.trim().toLowerCase()).filter(Boolean) }));
+    const approvalsStatusByMr = {};
+    const reviewersStatusByMr = {};
+    for (const mr of projectFiltered) {
+      const approvalsUsers = approvalsUsersByMr[mr.id] || [];
+      const reviewersUsers = reviewersUsersByMr[mr.id] || [];
+      const approvalsUsernames = approvalsUsers.map((u4) => u4.username.toLowerCase());
+      const reviewersUsernames = reviewersUsers.map((u4) => u4.username.toLowerCase());
+      let approvalsReadyAll = true;
+      let reviewersReadyAll = true;
+      const approvalsParts = [];
+      const reviewersParts = [];
+      for (const team of teamReqs) {
+        const aCount = team.members.filter((m3) => approvalsUsernames.includes(m3)).length;
+        const aReq = team.approvalsRequired;
+        approvalsParts.push(`${team.name}: ${aCount}/${aReq}`);
+        if (aCount < aReq) approvalsReadyAll = false;
+        const rReq = team.reviewersRequired ?? 0;
+        if (rReq > 0) {
+          const rCount = team.members.filter((m3) => reviewersUsernames.includes(m3)).length;
+          reviewersParts.push(`${team.name}: ${rCount}/${rReq}`);
+          if (rCount < rReq) reviewersReadyAll = false;
+        }
+      }
+      approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(" | ") || "No team requirements" };
+      reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(" | ") || "No reviewer requirements" };
+    }
+    const approvalFiltered = onlyApprovalReady ? approverFiltered.filter((mr) => approvalsStatusByMr[mr.id]?.ready) : approverFiltered;
+    const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter((mr) => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered;
+    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username === options2.username : mr.author?.username !== options2.username) : reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor : mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : reviewerReadyFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = authorFiltered.filter(isHotfixMr).length;
     const handleRefreshReviewMeta = () => setReviewMetaRefreshToken((t3) => t3 + 1);
@@ -1221,7 +1282,7 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
-      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus }),
+      /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, onlyApprovalReady, setOnlyApprovalReady, onlyReviewerReady, setOnlyReviewerReady }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading, invertAuthor, setInvertAuthor }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
@@ -1243,7 +1304,7 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
           error
         ] }),
         !loading && !error && !authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
-        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }),
+        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }),
         reviewMetaLoading && !!authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });
@@ -1292,15 +1353,41 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       }
       return { parsed: raw };
     };
+    const parseTeamRequirements = (val) => {
+      if (val == null) {
+        return { parsed: [] };
+      }
+      let raw = val;
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw);
+        } catch {
+          return { error: "teamRequirements option is not valid JSON." };
+        }
+      }
+      if (!Array.isArray(raw)) {
+        return { error: "teamRequirements should be an array." };
+      }
+      const isValid = raw.every((t3) => t3 && typeof t3 === "object" && typeof t3.name === "string" && Array.isArray(t3.members) && t3.members.every((m3) => typeof m3 === "string") && typeof t3.approvalsRequired === "number" && t3.approvalsRequired >= 0 && (t3.reviewersRequired == null || typeof t3.reviewersRequired === "number" && t3.reviewersRequired >= 0));
+      if (!isValid) {
+        return { error: "teamRequirements items must be { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }." };
+      }
+      return { parsed: raw };
+    };
     const { parsed, error } = parseProjects(scoppedOptions.projects);
     if (error) {
       configError = error;
       console.error("[git-buster] config error:", error);
     }
+    const { parsed: teamsParsed, error: teamsError } = parseTeamRequirements(scoppedOptions.teamRequirements);
+    if (teamsError && !configError) {
+      configError = teamsError;
+      console.error("[git-buster] config error:", teamsError);
+    }
     return {
       ...scoppedOptions,
-      projects: parsed
-      // only set if valid; otherwise undefined so component can react
+      projects: parsed,
+      teamRequirements: teamsParsed
     };
   };
   var createOrGetPageContainer = () => {

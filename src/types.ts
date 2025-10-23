@@ -3,11 +3,14 @@
 
 export type ProjectGroup = { name: string; projects: string[] }
 
+export type TeamRequirement = { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }
+
 export type Options = {
     enable?: boolean;
     username?: string;
     baseUrl?: string;
     projects?: ProjectGroup[]; // Full PROJECTS variable attached to plugin options
+    teamRequirements?: TeamRequirement[]; // custom approval/reviewer team requirements
 }
 
 export type User = {

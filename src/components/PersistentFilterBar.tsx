@@ -1,5 +1,5 @@
-interface Props { hideDrafts: boolean; setHideDrafts: (v: boolean) => void; onlyHotfixes: boolean; setOnlyHotfixes: (v: boolean) => void; groupByTicket: boolean; setGroupByTicket: (v:boolean)=>void; pipelineStatus: 'all'|'success'|'failed'; setPipelineStatus: (v:'all'|'success'|'failed')=>void }
-export const PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus }: Props) => (
+interface Props { hideDrafts: boolean; setHideDrafts: (v: boolean) => void; onlyHotfixes: boolean; setOnlyHotfixes: (v: boolean) => void; groupByTicket: boolean; setGroupByTicket: (v:boolean)=>void; pipelineStatus: 'all'|'success'|'failed'; setPipelineStatus: (v:'all'|'success'|'failed')=>void; onlyApprovalReady: boolean; setOnlyApprovalReady:(v:boolean)=>void; onlyReviewerReady: boolean; setOnlyReviewerReady:(v:boolean)=>void }
+export const PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, onlyApprovalReady, setOnlyApprovalReady, onlyReviewerReady, setOnlyReviewerReady }: Props) => (
   <div className="gb-filter-bar">
     <label title="Draft: GitLab draft/WIP flag or title starts with draft:/wip:" className="gb-filter-item">
       <input type="checkbox" checked={hideDrafts} onChange={e => setHideDrafts((e.target as HTMLInputElement).checked)} /> Hide draft MRs
@@ -17,6 +17,12 @@ export const PersistentFilterBar = ({ hideDrafts, setHideDrafts, onlyHotfixes, s
         <option value="success">Success</option>
         <option value="failed">Failed</option>
       </select>
+    </label>
+    <label className="gb-filter-item" title="Show only MRs meeting all team approval counts">
+      <input type="checkbox" checked={onlyApprovalReady} onChange={e=>setOnlyApprovalReady((e.target as HTMLInputElement).checked)} /> Approvals ready
+    </label>
+    <label className="gb-filter-item" title="Show only MRs meeting all team reviewer counts">
+      <input type="checkbox" checked={onlyReviewerReady} onChange={e=>setOnlyReviewerReady((e.target as HTMLInputElement).checked)} /> Reviewers ready
     </label>
   </div>
 )

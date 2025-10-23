@@ -17,7 +17,7 @@ const loadOptions = async () => {
 
 }
 
-const AllOptions = ['enable', 'baseUrl', 'username', 'projects']
+const AllOptions = ['enable', 'baseUrl', 'username', 'projects', 'teamRequirements']
 
 const saveOptions = async () => {
     const getValueFromType = (elem) => {

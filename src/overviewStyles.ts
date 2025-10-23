@@ -91,4 +91,9 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 .gb-avatar-invert-marker { position:absolute; top:-3px; right:-3px; background:#fff; color:#ec5941; font-size:10px; line-height:1; padding:1px 3px; border:1px solid #ec5941; border-radius:8px; box-shadow:0 0 2px rgba(0,0,0,.25); }
 @media (prefers-color-scheme: dark){ .gb-avatar-invert-marker { background:#333238; } }
 body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-invert-marker { background:#333238; }
+.gb-req-status { font-size:10px; font-family:monospace; padding:2px 4px; border:1px solid #bbb; border-radius:4px; display:inline-block; background:#f5f5f5; }
+.gb-req-status { white-space:nowrap; }
+.gb-req-status.ready { background:#2da160; border-color:#2da160; color:#fff; }
+.gb-req-status.not-ready { background:#ec5941; border-color:#ec5941; color:#fff; }
+@media (prefers-color-scheme: dark){ .gb-req-status.ready { background:#2da160; } .gb-req-status.not-ready { background:#ec5941; } }
 `;

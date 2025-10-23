@@ -1,6 +1,6 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { Options, ProjectGroup } from './types'
+import { Options, ProjectGroup, TeamRequirement } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
@@ -15,14 +15,14 @@ interface OverviewProps { options: Options; initialVisible: boolean }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
 const LS_PROJECT_GROUP_KEY = 'gb_project_group'
-interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean; pipelineStatus: 'all'|'success'|'failed' }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean; pipelineStatus: 'all'|'success'|'failed'; onlyApprovalReady: boolean; onlyReviewerReady: boolean }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all' }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', onlyApprovalReady: false, onlyReviewerReady: false }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === 'success' || parsed.pipelineStatus === 'failed' ? parsed.pipelineStatus : 'all' }
-  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all' } }
+    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === 'success' || parsed.pipelineStatus === 'failed' ? parsed.pipelineStatus : 'all', onlyApprovalReady: !!parsed.onlyApprovalReady, onlyReviewerReady: !!parsed.onlyReviewerReady }
+  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all', onlyApprovalReady: false, onlyReviewerReady: false } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
@@ -52,7 +52,9 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
   const [invertAuthor, setInvertAuthor] = useState<boolean>(false)
-  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus])
+  const [onlyApprovalReady, setOnlyApprovalReady] = useState<boolean>(() => loadFilters().onlyApprovalReady)
+  const [onlyReviewerReady, setOnlyReviewerReady] = useState<boolean>(() => loadFilters().onlyReviewerReady)
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, onlyApprovalReady, onlyReviewerReady])
 
   // Page title only while visible
   usePageTitle(visible ? 'Git Buster Overview' : document.title)
@@ -108,12 +110,42 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     const has = approvers.some(u => u.username === selectedApprover)
     return invertApprover ? !has : has
   }) : reviewerFiltered
-  // Apply author filter last
+  // After we have approval/reviewer maps compute team requirement statuses
+  const teamReqs: TeamRequirement[] = (options.teamRequirements || []).map(t => ({ ...t, members: t.members.map(m => m.trim().toLowerCase()).filter(Boolean) }))
+  const approvalsStatusByMr: Record<number, { ready: boolean; details: string }> = {}
+  const reviewersStatusByMr: Record<number, { ready: boolean; details: string }> = {}
+  for (const mr of projectFiltered) {
+    const approvalsUsers = approvalsUsersByMr[mr.id] || []
+    const reviewersUsers = reviewersUsersByMr[mr.id] || []
+    const approvalsUsernames = approvalsUsers.map(u => u.username.toLowerCase())
+    const reviewersUsernames = reviewersUsers.map(u => u.username.toLowerCase())
+    let approvalsReadyAll = true
+    let reviewersReadyAll = true
+    const approvalsParts: string[] = []
+    const reviewersParts: string[] = []
+    for (const team of teamReqs) {
+      const aCount = team.members.filter(m => approvalsUsernames.includes(m)).length
+      const aReq = team.approvalsRequired
+      approvalsParts.push(`${team.name}: ${aCount}/${aReq}`)
+      if (aCount < aReq) approvalsReadyAll = false
+      const rReq = team.reviewersRequired ?? 0
+      if (rReq > 0) {
+        const rCount = team.members.filter(m => reviewersUsernames.includes(m)).length
+        reviewersParts.push(`${team.name}: ${rCount}/${rReq}`)
+        if (rCount < rReq) reviewersReadyAll = false
+      }
+    }
+    approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No team requirements' }
+    reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(' | ') || 'No reviewer requirements' }
+  }
+  const approvalFiltered = onlyApprovalReady ? approverFiltered.filter(mr => approvalsStatusByMr[mr.id]?.ready) : approverFiltered
+  const reviewerReadyFiltered = onlyReviewerReady ? approvalFiltered.filter(mr => reviewersStatusByMr[mr.id]?.ready) : approvalFiltered
+  // Apply author filter last (replace previous authorFiltered definition)
   const authorFiltered = selectedAuthor
     ? (selectedAuthor === NOT_ME && options.username
-        ? approverFiltered.filter(mr => invertAuthor ? mr.author?.username === options.username : mr.author?.username !== options.username)
-        : approverFiltered.filter(mr => invertAuthor ? (mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor) : (mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor)))
-    : approverFiltered
+        ? reviewerReadyFiltered.filter(mr => invertAuthor ? mr.author?.username === options.username : mr.author?.username !== options.username)
+        : reviewerReadyFiltered.filter(mr => invertAuthor ? (mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor) : (mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor)))
+    : reviewerReadyFiltered
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = authorFiltered.filter(isHotfixMr).length
   const handleRefreshReviewMeta = () => setReviewMetaRefreshToken(t => t + 1)
@@ -133,7 +165,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
           </select>
         </label>
       </div>
-      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} />
+      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} onlyApprovalReady={onlyApprovalReady} setOnlyApprovalReady={setOnlyApprovalReady} onlyReviewerReady={onlyReviewerReady} setOnlyReviewerReady={setOnlyReviewerReady} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
@@ -144,7 +176,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         {loading && <div className="gb-sub">Loading merge requests…</div>}
         {error && !loading && <div className="gb-error">Failed to load: {error}</div>}
         {!loading && !error && !authorFiltered.length && <div className="gb-sub">No opened merge requests found.</div>}
-        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} groupByTicket={groupByTicket} sortDirection={sortDirection} setSortDirection={setSortDirection} />}
+        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} approvalsStatusByMr={approvalsStatusByMr} reviewersStatusByMr={reviewersStatusByMr} groupByTicket={groupByTicket} sortDirection={sortDirection} setSortDirection={setSortDirection} />}
         {reviewMetaLoading && !!authorFiltered.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
       </div>
     </div>

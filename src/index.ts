@@ -35,13 +35,28 @@ const loadOptions = async (): Promise<Options> => {
         if (!isValid) { return { error: 'projects array items must be { name: string; projects: string[] } with non-empty strings.' } }
         return { parsed: raw }
     }
+    // New parser for teamRequirements
+    const parseTeamRequirements = (val: any): { parsed?: any; error?: string } => {
+        if (val == null) { return { parsed: [] } }
+        let raw = val
+        if (typeof raw === 'string') {
+            try { raw = JSON.parse(raw) } catch { return { error: 'teamRequirements option is not valid JSON.' } }
+        }
+        if (!Array.isArray(raw)) { return { error: 'teamRequirements should be an array.' } }
+        const isValid = raw.every(t => t && typeof t === 'object' && typeof t.name === 'string' && Array.isArray(t.members) && t.members.every((m: any) => typeof m === 'string') && typeof t.approvalsRequired === 'number' && t.approvalsRequired >= 0 && (t.reviewersRequired == null || (typeof t.reviewersRequired === 'number' && t.reviewersRequired >= 0)))
+        if (!isValid) { return { error: 'teamRequirements items must be { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }.' } }
+        return { parsed: raw }
+    }
 
     const { parsed, error } = parseProjects(scoppedOptions.projects)
     if (error) { configError = error; console.error('[git-buster] config error:', error) }
+    const { parsed: teamsParsed, error: teamsError } = parseTeamRequirements(scoppedOptions.teamRequirements)
+    if (teamsError && !configError) { configError = teamsError; console.error('[git-buster] config error:', teamsError) }
 
     return {
         ...scoppedOptions,
-        projects: parsed, // only set if valid; otherwise undefined so component can react
+        projects: parsed,
+        teamRequirements: teamsParsed
     }
 }
 
