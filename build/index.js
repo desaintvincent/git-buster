@@ -704,24 +704,28 @@
     return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\u2022" });
   };
   var reviewersCell = (reviewers, status) => {
-    const missing = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need).map((c3) => c3.team) || [];
-    return /* @__PURE__ */ u3("div", { className: "gb-right", children: [
-      /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
-        reviewers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewers.length})`, className: "gb-avatar-stack", children: reviewers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
-        status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Reviewer requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
-      ] }),
-      !!missing.length && /* @__PURE__ */ u3("div", { className: "gb-team-miss-block", title: "Missing team reviewer counts", children: missing.map((t3) => /* @__PURE__ */ u3("span", { className: "gb-team-miss", children: t3 })) })
-    ] });
+    const missingEntries = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need) || [];
+    const tooltip = missingEntries.length ? `Missing reviewers: ${missingEntries.map((c3) => `${c3.team} ${c3.have}/${c3.need}`).join(", ")}` : status ? `Reviewer requirements: ${status.details}` : "No reviewer data";
+    return /* @__PURE__ */ u3("div", { className: "gb-right", children: /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
+      reviewers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewers.length})`, className: "gb-avatar-stack", children: reviewers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: status.ready ? `All reviewer team requirements met` : `Some reviewer team requirements missing`, children: status.ready ? "\u2713" : "\u2717" }),
+      !!missingEntries.length && /* @__PURE__ */ u3("span", { className: "gb-miss-agg", title: tooltip, children: [
+        "!",
+        missingEntries.length
+      ] })
+    ] }) });
   };
   var approversCell = (approvers, status) => {
-    const missing = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need).map((c3) => c3.team) || [];
-    return /* @__PURE__ */ u3("div", { className: "gb-right", children: [
-      /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
-        approvers.length ? /* @__PURE__ */ u3("span", { title: `Approvers (${approvers.length})`, className: "gb-avatar-stack", children: approvers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
-        status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Approver requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
-      ] }),
-      !!missing.length && /* @__PURE__ */ u3("div", { className: "gb-team-miss-block", title: "Missing team approval counts", children: missing.map((t3) => /* @__PURE__ */ u3("span", { className: "gb-team-miss", children: t3 })) })
-    ] });
+    const missingEntries = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need) || [];
+    const tooltip = missingEntries.length ? `Missing approvals: ${missingEntries.map((c3) => `${c3.team} ${c3.have}/${c3.need}`).join(", ")}` : status ? `Approver requirements: ${status.details}` : "No approval data";
+    return /* @__PURE__ */ u3("div", { className: "gb-right", children: /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
+      approvers.length ? /* @__PURE__ */ u3("span", { title: `Approvers (${approvers.length})`, className: "gb-avatar-stack", children: approvers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: status.ready ? `All approval team requirements met` : `Some approval team requirements missing`, children: status.ready ? "\u2713" : "\u2717" }),
+      !!missingEntries.length && /* @__PURE__ */ u3("span", { className: "gb-miss-agg", title: tooltip, children: [
+        "!",
+        missingEntries.length
+      ] })
+    ] }) });
   };
   var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }) => {
     const sortedMrs = [...mrs].sort((a3, b) => {
@@ -1139,6 +1143,8 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
 .gb-team-miss-block { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 @media (prefers-color-scheme: dark){ .gb-team-miss { background:#ec5941; } }
 body[data-theme='dark'] .gb-team-miss, body.theme-dark .gb-team-miss { background:#ec5941; }
+.gb-miss-agg { background:#ec5941; color:#fff; font-size:10px; padding:2px 5px; border-radius:10px; font-family:monospace; font-weight:600; display:inline-flex; align-items:center; line-height:1; opacity:.35; transition:opacity .15s ease-in-out; }
+tr:hover .gb-miss-agg { opacity:1; }
 `;
 
   // src/hooks/usePageTitle.ts

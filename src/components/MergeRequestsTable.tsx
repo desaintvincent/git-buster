@@ -16,27 +16,29 @@ const pipelineCell = (mr: MRWithProject) => {
 }
 
 const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}|undefined) => {
-  const missing = status?.teamCounts.filter(c => c.need>0 && c.have < c.need).map(c=>c.team) || []
+  const missingEntries = status?.teamCounts.filter(c => c.need>0 && c.have < c.need) || []
+  const tooltip = missingEntries.length ? `Missing reviewers: ${missingEntries.map(c=>`${c.team} ${c.have}/${c.need}`).join(', ')}` : status ? `Reviewer requirements: ${status.details}` : 'No reviewer data'
   return (
     <div className="gb-right">
       <span className="gb-inline-cell right">
         {reviewers.length ? <span title={`Reviewers (${reviewers.length})`} className="gb-avatar-stack">{reviewers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Reviewer requirements: ${status.details}`}>{status.ready ? '✓':'✗'}</span>}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All reviewer team requirements met` : `Some reviewer team requirements missing`}>{status.ready ? '✓':'✗'}</span>}
+        {!!missingEntries.length && <span className="gb-miss-agg" title={tooltip}>!{missingEntries.length}</span>}
       </span>
-      {!!missing.length && <div className="gb-team-miss-block" title="Missing team reviewer counts">{missing.map(t => <span className="gb-team-miss">{t}</span>)}</div>}
     </div>
   )
 }
 
 const approversCell = (approvers: User[], status: {ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}|undefined) => {
-  const missing = status?.teamCounts.filter(c => c.need>0 && c.have < c.need).map(c=>c.team) || []
+  const missingEntries = status?.teamCounts.filter(c => c.need>0 && c.have < c.need) || []
+  const tooltip = missingEntries.length ? `Missing approvals: ${missingEntries.map(c=>`${c.team} ${c.have}/${c.need}`).join(', ')}` : status ? `Approver requirements: ${status.details}` : 'No approval data'
   return (
     <div className="gb-right">
       <span className="gb-inline-cell right">
         {approvers.length ? <span title={`Approvers (${approvers.length})`} className="gb-avatar-stack">{approvers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Approver requirements: ${status.details}`}>{status.ready ? '✓':'✗'}</span>}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All approval team requirements met` : `Some approval team requirements missing`}>{status.ready ? '✓':'✗'}</span>}
+        {!!missingEntries.length && <span className="gb-miss-agg" title={tooltip}>!{missingEntries.length}</span>}
       </span>
-      {!!missing.length && <div className="gb-team-miss-block" title="Missing team approval counts">{missing.map(t => <span className="gb-team-miss">{t}</span>)}</div>}
     </div>
   )
 }

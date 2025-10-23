@@ -107,4 +107,6 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
 .gb-team-miss-block { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 @media (prefers-color-scheme: dark){ .gb-team-miss { background:#ec5941; } }
 body[data-theme='dark'] .gb-team-miss, body.theme-dark .gb-team-miss { background:#ec5941; }
+.gb-miss-agg { background:#ec5941; color:#fff; font-size:10px; padding:2px 5px; border-radius:10px; font-family:monospace; font-weight:600; display:inline-flex; align-items:center; line-height:1; opacity:.35; transition:opacity .15s ease-in-out; }
+tr:hover .gb-miss-agg { opacity:1; }
 `;
