@@ -2,10 +2,6 @@
 // Shared domain types and utilities for git-buster
 
 export type ProjectGroup = { name: string; projects: string[] }
-export const PROJECTS: ProjectGroup[] = [
-  { name: 'sywa', projects: [ 'sywa/sywa/frontend', 'sywa/sywa/backend', 'sywa/sywa/sywatt', 'sywa/sywa/sywack' ] },
-  { name: 'slip', projects: [ 'slip/mono-slip' ] }
-]
 
 export type Options = {
     enable?: boolean;

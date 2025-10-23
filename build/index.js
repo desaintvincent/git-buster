@@ -1,11 +1,5 @@
 "use strict";
 (() => {
-  // src/types.ts
-  var PROJECTS = [
-    { name: "sywa", projects: ["sywa/sywa/frontend", "sywa/sywa/backend", "sywa/sywa/sywatt", "sywa/sywa/sywack"] },
-    { name: "slip", projects: ["slip/mono-slip"] }
-  ];
-
   // node_modules/preact/dist/preact.module.js
   var n;
   var l;
@@ -564,10 +558,15 @@
         setLoading(false);
         return;
       }
+      if (!projectGroups || !projectGroups.length) {
+        setError("No projects configured");
+        setMrs([]);
+        setLoading(false);
+        return;
+      }
       let cancelled = false;
       setLoading(true);
-      const groups = projectGroups && projectGroups.length ? projectGroups : PROJECTS;
-      const group = groups.find((g2) => g2.name === groupName) || groups[0];
+      const group = projectGroups.find((g2) => g2.name === groupName) || projectGroups[0];
       const paths = group?.projects || [];
       Promise.all(paths.map((p3) => fetchOpenedMrsForProject(baseUrl, p3))).then((results) => {
         if (!cancelled) {
@@ -769,9 +768,12 @@
     }
   };
   var OverviewRoot = ({ options: options2, initialVisible }) => {
+    if (!options2.projects || !options2.projects.length) {
+      return null;
+    }
     const [visible, setVisible] = d2(initialVisible);
     window.gitBusterSetVisible = (v3) => setVisible(!!v3);
-    const groups = options2.projects && options2.projects.length ? options2.projects : PROJECTS;
+    const groups = options2.projects;
     const initialGroup = (() => {
       try {
         const v3 = localStorage.getItem(LS_PROJECT_GROUP_KEY);
@@ -885,6 +887,7 @@
 
   // src/index.ts
   var options;
+  var configError = null;
   var EXTENSION_NAME = "git-buster";
   var EXT_PAGE_ID = "git-buster-page";
   var EXT_SIDEBAR_BTN_ID = "git-buster-sidebar-btn";
@@ -894,9 +897,37 @@
   var loadOptions = async () => {
     const options2 = await chrome.storage.sync.get([EXTENSION_NAME]);
     const scoppedOptions = options2[EXTENSION_NAME] ?? {};
+    console.log("[git-buster] raw stored options", scoppedOptions);
+    const parseProjects = (val) => {
+      if (val == null) {
+        return { error: "Missing projects configuration in extension options." };
+      }
+      let raw = val;
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw);
+        } catch {
+          return { error: "projects option is not valid JSON." };
+        }
+      }
+      if (!Array.isArray(raw)) {
+        return { error: "projects should be an array." };
+      }
+      const isValid = raw.every((g2) => g2 && typeof g2 === "object" && typeof g2.name === "string" && g2.name.trim().length && Array.isArray(g2.projects) && g2.projects.every((p3) => typeof p3 === "string" && p3.trim().length));
+      if (!isValid) {
+        return { error: "projects array items must be { name: string; projects: string[] } with non-empty strings." };
+      }
+      return { parsed: raw };
+    };
+    const { parsed, error } = parseProjects(scoppedOptions.projects);
+    if (error) {
+      configError = error;
+      console.error("[git-buster] config error:", error);
+    }
     return {
       ...scoppedOptions,
-      projects: PROJECTS
+      projects: parsed
+      // only set if valid; otherwise undefined so component can react
     };
   };
   var createOrGetPageContainer = () => {
@@ -1008,6 +1039,13 @@
   };
   var init = async () => {
     options = await loadOptions();
+    if (configError) {
+      const container2 = createOrGetPageContainer();
+      container2.innerHTML = `<div style="padding:24px;font-family:system-ui,sans-serif;color:#b00020;background:#2b1d1f;border:1px solid #b00020;border-radius:6px;max-width:640px;margin:24px auto;"><h2 style="margin-top:0;color:#ffb4c1;font-size:18px;">Git Buster configuration error</h2><p style="line-height:1.4;margin:8px 0;">${configError}</p><p style="font-size:12px;opacity:.8;margin:12px 0 0;">Update the extension options (projects JSON) and reload the page.</p></div>`;
+      ensureSidebarButton();
+      updateSidebarButtonState();
+      return;
+    }
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
       return;
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import { MR, ProjectGroup, PROJECTS } from '../types'
+import { MR, ProjectGroup } from '../types'
 
 export interface MRWithProject extends MR { projectPath: string }
 
@@ -19,10 +19,10 @@ export const useProjectMergeRequests = (baseUrl: string | undefined, projectGrou
 
   useEffect(() => {
     if (!baseUrl) { setError('Missing baseUrl option'); setLoading(false); return }
+    if (!projectGroups || !projectGroups.length) { setError('No projects configured'); setMrs([]); setLoading(false); return }
     let cancelled = false
     setLoading(true)
-    const groups = (projectGroups && projectGroups.length ? projectGroups : PROJECTS)
-    const group: ProjectGroup = groups.find((g: ProjectGroup) => g.name === groupName) || groups[0]
+    const group: ProjectGroup = projectGroups.find((g: ProjectGroup) => g.name === groupName) || projectGroups[0]
     const paths = group?.projects || []
     Promise.all(paths.map(p => fetchOpenedMrsForProject(baseUrl, p)))
       .then(results => { if (!cancelled) { setMrs(results.flat()); setError(null) } })

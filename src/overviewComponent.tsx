@@ -1,6 +1,6 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { Options, PROJECTS, ProjectGroup } from './types'
+import { Options, ProjectGroup } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
@@ -27,10 +27,11 @@ const loadFilters = (): PersistFilters => {
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
 const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
+  if (!options.projects || !options.projects.length) { return null }
   const [visible, setVisible] = useState(initialVisible)
   // Expose setter globally for index.ts button
   ;(window as any).gitBusterSetVisible = (v: boolean) => setVisible(!!v)
-  const groups: ProjectGroup[] = (options.projects && options.projects.length ? options.projects : PROJECTS)
+  const groups: ProjectGroup[] = options.projects
   const initialGroup = (() => { try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return groups.find(g => g.name === v)?.name || groups[0].name } catch { return groups[0].name } })()
   const [projectGroup, setProjectGroup] = useState<string>(initialGroup)
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
