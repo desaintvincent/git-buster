@@ -10,6 +10,7 @@ import { isHotfixMr, isDraftMr } from './utils/mrUtils'
 import { OVERVIEW_CSS } from './overviewStyles'
 import { usePageTitle } from './hooks/usePageTitle'
 import { NOT_ME } from './components/NonPersistentAuthorFilter'
+import { NonPersistentTeamReqFilter } from './components/NonPersistentTeamReqFilter'
 
 interface OverviewProps { options: Options; initialVisible: boolean }
 
@@ -76,6 +77,12 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [invertAuthor, setInvertAuthor] = useState<boolean>(false)
   const [approvalReadyFilter, setApprovalReadyFilter] = useState<'all'|'ready'|'not_ready'>(() => loadFilters().approvalReadyFilter)
   const [reviewerReadyFilter, setReviewerReadyFilter] = useState<'all'|'ready'|'not_ready'>(() => loadFilters().reviewerReadyFilter)
+  const [selectedApprovalTeam, setSelectedApprovalTeam] = useState<string | null>(null)
+  const [approvalTeamMode, setApprovalTeamMode] = useState<'all'|'missing'|'ready'>('all')
+  const [selectedReviewerTeam, setSelectedReviewerTeam] = useState<string | null>(null)
+  const [reviewerTeamMode, setReviewerTeamMode] = useState<'all'|'missing'|'ready'>('all')
+  const [approvalsMissingMode, setApprovalsMissingMode] = useState<'all'|'missing'|'none_missing'>('all')
+  const [reviewersMissingMode, setReviewersMissingMode] = useState<'all'|'missing'|'none_missing'>('all')
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter])
 
   // Page title only while visible
@@ -169,7 +176,50 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     if (mode === 'not_ready') return list.filter(mr => statusMap[mr.id] && !statusMap[mr.id].ready)
     return list
   }
-  const approvalFiltered = applyReadyFilter(approverFiltered, approvalsStatusByMr, approvalReadyFilter)
+  const applyTeamReqFilters = (list: typeof approverFiltered) => {
+    let out = list
+    // Global missing presence filters (approvals)
+    if (approvalsMissingMode !== 'all') {
+      out = out.filter(mr => {
+        const counts = approvalsStatusByMr[mr.id]?.teamCounts || []
+        const hasMissing = counts.some(c => c.have < c.need)
+        return approvalsMissingMode === 'missing' ? hasMissing : !hasMissing
+      })
+    }
+    // Global missing presence filters (reviewers)
+    if (reviewersMissingMode !== 'all') {
+      out = out.filter(mr => {
+        const counts = reviewersStatusByMr[mr.id]?.teamCounts || []
+        const hasMissing = counts.some(c => c.have < c.need)
+        return reviewersMissingMode === 'missing' ? hasMissing : !hasMissing
+      })
+    }
+    if (selectedApprovalTeam) {
+      out = out.filter(mr => {
+        const counts = approvalsStatusByMr[mr.id]?.teamCounts || []
+        const entry = counts.find(c => c.team === selectedApprovalTeam)
+        if (!entry) return false
+        const missing = entry.have < entry.need
+        if (approvalTeamMode === 'missing') return missing
+        if (approvalTeamMode === 'ready') return !missing
+        return true
+      })
+    }
+    if (selectedReviewerTeam) {
+      out = out.filter(mr => {
+        const counts = reviewersStatusByMr[mr.id]?.teamCounts || []
+        const entry = counts.find(c => c.team === selectedReviewerTeam)
+        if (!entry) return false
+        const missing = entry.have < entry.need
+        if (reviewerTeamMode === 'missing') return missing
+        if (reviewerTeamMode === 'ready') return !missing
+        return true
+      })
+    }
+    return out
+  }
+  const teamFiltered = applyTeamReqFilters(approverFiltered)
+  const approvalFiltered = applyReadyFilter(teamFiltered, approvalsStatusByMr, approvalReadyFilter)
   const reviewerReadyFiltered = applyReadyFilter(approvalFiltered, reviewersStatusByMr, reviewerReadyFilter)
   // Apply author filter last (replace previous authorFiltered definition)
   const authorFiltered = selectedAuthor
@@ -198,6 +248,9 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} approvalReadyFilter={approvalReadyFilter} setApprovalReadyFilter={setApprovalReadyFilter} reviewerReadyFilter={reviewerReadyFilter} setReviewerReadyFilter={setReviewerReadyFilter} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
+      {!!teamReqs.length && <div className="gb-filter-bar" style={{ marginTop:'8px' }}>
+        <NonPersistentTeamReqFilter teams={teamReqs.map(t=>t.name)} selectedApprovalTeam={selectedApprovalTeam} setSelectedApprovalTeam={setSelectedApprovalTeam} approvalTeamMode={approvalTeamMode} setApprovalTeamMode={setApprovalTeamMode} selectedReviewerTeam={selectedReviewerTeam} setSelectedReviewerTeam={setSelectedReviewerTeam} reviewerTeamMode={reviewerTeamMode} setReviewerTeamMode={setReviewerTeamMode} approvalsMissingMode={approvalsMissingMode} setApprovalsMissingMode={setApprovalsMissingMode} reviewersMissingMode={reviewersMissingMode} setReviewersMissingMode={setReviewersMissingMode} disabled={reviewMetaLoading} />
+      </div>}
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
         <div className="gb-small-text">{authorFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>

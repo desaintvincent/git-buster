@@ -41,9 +41,15 @@ Clicking the button toggles a synthetic overview page that replaces the main con
   - Approvers: All | Ready | Not ready
   - Reviewers: All | Ready | Not ready
   Selecting Ready shows only MRs meeting all team counts; Not ready shows those missing at least one required approval/reviewer count.
+- Team requirement filters (ephemeral, shown only if teamRequirements configured):
+  - Approvals missing: All | Has missing | None missing (presence of any team below required approvals)
+  - Reviewers missing: All | Has missing | None missing (presence of any team below required reviewers)
+  - Team approvals: mode (All/Missing/Ready) + team selector (filters a specific team's approvals count readiness)
+  - Team reviewers: mode (All/Missing/Ready) + team selector (filters a specific team's reviewers count readiness)
 - Ephemeral filters: project, author, reviewer, approver (with invert toggles) that are not stored across reloads.
 - Per-MR magnifying glass button: if the MR title contains a JIRA-like ticket (e.g. ABC-123), clicking adds it to the title filter without duplication; disabled if no ticket pattern is found.
-- Per-MR columns include Approvals (count of approved_by) and Reviewers (unique non-author users who either approved or left a non-system comment; tooltip lists names). Each has a ✓ (ready) or ✗ (not ready) badge with a tooltip detailing team counts.
+- Per-MR columns include Approvals and Reviewers. Each shows avatars (if any) and a ✓/✗ readiness badge. When teams are missing counts, red team badges now appear on their own line beneath the avatars/status (not inline) and the entire cell content is right-aligned for compact stacking.
+- Missing team badges are embedded inside the Approvers and Reviewers cells (no separate columns).
 - Review meta (approvals & reviewers) is cached per MR until its `updated_at` changes. Fetches occur in small batches (default 5). A "Refresh review meta" button clears cached entries for currently visible MRs and refetches them incrementally.
 
 Hotfix definition (overview page filter):

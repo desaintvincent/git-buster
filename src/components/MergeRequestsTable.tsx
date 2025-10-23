@@ -5,31 +5,39 @@ import { extractJiraTicket, isDraftMr } from '../utils/mrUtils'
 import { UpdatedDate } from './UpdatedDate'
 
 export interface MRWithProject extends MR { projectPath: string }
-interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; approvalsStatusByMr: Record<number,{ready:boolean;details:string}>; reviewersStatusByMr: Record<number,{ready:boolean;details:string}>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
+interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; approvalsStatusByMr: Record<number,{ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}>; reviewersStatusByMr: Record<number,{ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
 
 const pipelineCell = (mr: MRWithProject) => {
   const status = mr.head_pipeline?.status
-  if (!status) return '\u2013'
-  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">\u2713</span>
-  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">\u2717</span>
-  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>\u2022</span>
+  if (!status) return '–'
+  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">✓</span>
+  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">✗</span>
+  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>•</span>
 }
 
-const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string}|undefined) => {
+const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}|undefined) => {
+  const missing = status?.teamCounts.filter(c => c.need>0 && c.have < c.need).map(c=>c.team) || []
   return (
-    <span className="gb-inline-cell">
-      {reviewers.length ? <span title={`Reviewers (${reviewers.length})`} className="gb-avatar-stack">{reviewers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-      {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Reviewer requirements: ${status.details}`}>{status.ready ? '\u2713':'\u2717'}</span>}
-    </span>
+    <div className="gb-right">
+      <span className="gb-inline-cell right">
+        {reviewers.length ? <span title={`Reviewers (${reviewers.length})`} className="gb-avatar-stack">{reviewers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Reviewer requirements: ${status.details}`}>{status.ready ? '✓':'✗'}</span>}
+      </span>
+      {!!missing.length && <div className="gb-team-miss-block" title="Missing team reviewer counts">{missing.map(t => <span className="gb-team-miss">{t}</span>)}</div>}
+    </div>
   )
 }
 
-const approversCell = (approvers: User[], status: {ready:boolean;details:string}|undefined) => {
+const approversCell = (approvers: User[], status: {ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}|undefined) => {
+  const missing = status?.teamCounts.filter(c => c.need>0 && c.have < c.need).map(c=>c.team) || []
   return (
-    <span className="gb-inline-cell">
-      {approvers.length ? <span title={`Approvers (${approvers.length})`} className="gb-avatar-stack">{approvers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-      {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Approver requirements: ${status.details}`}>{status.ready ? '\u2713':'\u2717'}</span>}
-    </span>
+    <div className="gb-right">
+      <span className="gb-inline-cell right">
+        {approvers.length ? <span title={`Approvers (${approvers.length})`} className="gb-avatar-stack">{approvers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={`Approver requirements: ${status.details}`}>{status.ready ? '✓':'✗'}</span>}
+      </span>
+      {!!missing.length && <div className="gb-team-miss-block" title="Missing team approval counts">{missing.map(t => <span className="gb-team-miss">{t}</span>)}</div>}
+    </div>
   )
 }
 
@@ -83,15 +91,15 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                       <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
                     </div>
                     <div className="gb-mr-meta-line">
-                      <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">\ud83d\udd0d</button>
+                      <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
                       <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
                     </div>
                   </div>
                 </td>
                 <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                 <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                <td className="gb-td gb-td-small">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
-                <td className="gb-td gb-td-small">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
+                <td className="gb-td gb-td-small gb-right">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
+                <td className="gb-td gb-td-small gb-right">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
                 <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                 <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
@@ -167,15 +175,15 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                         <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
                       </div>
                       <div className="gb-mr-meta-line">
-                        <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">\ud83d\udd0d</button>
+                        <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
                         <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
                       </div>
                     </div>
                   </td>
                   <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                   <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                  <td className="gb-td gb-td-small">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
-                  <td className="gb-td gb-td-small">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
+                  <td className="gb-td gb-td-small gb-right">{reviewersCell(reviewers, reviewersStatusByMr[mr.id])}</td>
+                  <td className="gb-td gb-td-small gb-right">{approversCell(approvers, approvalsStatusByMr[mr.id])}</td>
                   <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                   <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>

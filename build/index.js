@@ -699,20 +699,28 @@
   var pipelineCell = (mr) => {
     const status = mr.head_pipeline?.status;
     if (!status) return "\u2013";
-    if (status === "success") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status success", title: "Pipeline succeeded", children: "\\u2713" });
-    if (status === "failed") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status failed", title: "Pipeline failed", children: "\\u2717" });
-    return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\\u2022" });
+    if (status === "success") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status success", title: "Pipeline succeeded", children: "\u2713" });
+    if (status === "failed") return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status failed", title: "Pipeline failed", children: "\u2717" });
+    return /* @__PURE__ */ u3("span", { className: "gb-pipeline-status other", title: `Pipeline status: ${status}`, children: "\u2022" });
   };
   var reviewersCell = (reviewers, status) => {
-    return /* @__PURE__ */ u3("span", { className: "gb-inline-cell", children: [
-      reviewers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewers.length})`, className: "gb-avatar-stack", children: reviewers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
-      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Reviewer requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
+    const missing = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need).map((c3) => c3.team) || [];
+    return /* @__PURE__ */ u3("div", { className: "gb-right", children: [
+      /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
+        reviewers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewers.length})`, className: "gb-avatar-stack", children: reviewers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+        status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Reviewer requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
+      ] }),
+      !!missing.length && /* @__PURE__ */ u3("div", { className: "gb-team-miss-block", title: "Missing team reviewer counts", children: missing.map((t3) => /* @__PURE__ */ u3("span", { className: "gb-team-miss", children: t3 })) })
     ] });
   };
   var approversCell = (approvers, status) => {
-    return /* @__PURE__ */ u3("span", { className: "gb-inline-cell", children: [
-      approvers.length ? /* @__PURE__ */ u3("span", { title: `Approvers (${approvers.length})`, className: "gb-avatar-stack", children: approvers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
-      status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Approver requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
+    const missing = status?.teamCounts.filter((c3) => c3.need > 0 && c3.have < c3.need).map((c3) => c3.team) || [];
+    return /* @__PURE__ */ u3("div", { className: "gb-right", children: [
+      /* @__PURE__ */ u3("span", { className: "gb-inline-cell right", children: [
+        approvers.length ? /* @__PURE__ */ u3("span", { title: `Approvers (${approvers.length})`, className: "gb-avatar-stack", children: approvers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013",
+        status && /* @__PURE__ */ u3("span", { className: `gb-req-status ${status.ready ? "ready" : "not-ready"}`, title: `Approver requirements: ${status.details}`, children: status.ready ? "\u2713" : "\u2717" })
+      ] }),
+      !!missing.length && /* @__PURE__ */ u3("div", { className: "gb-team-miss-block", title: "Missing team approval counts", children: missing.map((t3) => /* @__PURE__ */ u3("span", { className: "gb-team-miss", children: t3 })) })
     ] });
   };
   var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, approvalsStatusByMr, reviewersStatusByMr, groupByTicket, sortDirection, setSortDirection }) => {
@@ -759,7 +767,7 @@
                 /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
               ] }),
               /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
-                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\\ud83d\\udd0d" }),
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
                 /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
                   mr.source_branch,
                   " \\u2192 ",
@@ -769,8 +777,8 @@
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small gb-right", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small gb-right", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -831,7 +839,7 @@
                 /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
               ] }),
               /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
-                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\\ud83d\\udd0d" }),
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
                 /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
                   mr.source_branch,
                   " \\u2192 ",
@@ -841,8 +849,8 @@
             ] }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small gb-right", children: reviewersCell(reviewers, reviewersStatusByMr[mr.id]) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small gb-right", children: approversCell(approvers, approvalsStatusByMr[mr.id]) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: pipelineCell(mr) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
@@ -1049,8 +1057,9 @@ body[data-theme='dark'] .gb-pipeline-select, body.theme-dark .gb-pipeline-select
 .gb-title-cell { display:flex; align-items:flex-start; gap:6px; }
 .gb-sub { opacity:.6; font-size:11px; }
 .gb-avatar-stack { display:inline-flex; align-items:center; }
-.gb-magnify-btn { border:1px solid #bbb; color:#222; padding:2px 5px; border-radius:4px; font-size:11px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; gap:2px; }
-.gb-magnify-btn[disabled] { background:#f5f5f5; color:#999; cursor:not-allowed; }
+.gb-magnify-btn { border:1px solid #bbb; color:#222; padding:0; width:24px; height:22px; border-radius:4px; font-size:14px; cursor:pointer; line-height:1; display:inline-flex; align-items:center; justify-content:center; }
+.gb-magnify-btn:hover:not([disabled]) { background:#e6ebf1; }
+@media (prefers-color-scheme: dark){ .gb-magnify-btn { background:#333238; color:#fff; } .gb-magnify-btn:hover:not([disabled]) { background:#444b53; } }
 .gb-avatar-wrapper { display:inline-flex; align-items:center; justify-content:center; }
 .gb-avatar { width:22px; height:22px; border-radius:50%; object-fit:cover; border:1px solid #ccc; background:#eee; display:inline-block; }
 .gb-avatar-fallback { width:22px; height:22px; border-radius:50%; border:1px solid #ccc; background:#eee; display:inline-block; font-size:10px; line-height:22px; text-align:center; color:#555; }
@@ -1107,10 +1116,12 @@ body[data-theme='dark'] .gb-group-latest, body.theme-dark .gb-group-latest { opa
 .gb-date:hover { text-decoration:underline; }
 @media (prefers-color-scheme: dark) { .gb-date { color:#d1d5da; } }
 body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
-.gb-pipeline-status { font-size:12px; display:inline-block; width:16px; text-align:center; font-weight:600; }
-.gb-pipeline-status.success { color:#2da160; }
-.gb-pipeline-status.failed { color:#ec5941; }
-.gb-pipeline-status.other { color:#c17d10; }
+.gb-pipeline-status { font-size:11px; display:inline-flex; min-width:20px; height:18px; align-items:center; justify-content:center; font-weight:600; border:1px solid #bbb; border-radius:4px; line-height:1; background:#f5f5f5; padding:0 4px; }
+.gb-pipeline-status.success { background:#2da160; color:#fff; border-color:#2da160; }
+.gb-pipeline-status.failed { background:#ec5941; color:#fff; border-color:#ec5941; }
+.gb-pipeline-status.other { background:#c17d10; color:#fff; border-color:#c17d10; }
+@media (prefers-color-scheme: dark){ .gb-pipeline-status { background:#333238; } }
+body[data-theme='dark'] .gb-pipeline-status, body.theme-dark .gb-pipeline-status { background:#333238; }
 .gb-avatar-filter-value { position:relative; display:inline-block; }
 .gb-avatar-invert-marker { position:absolute; top:-3px; right:-3px; background:#fff; color:#ec5941; font-size:10px; line-height:1; padding:1px 3px; border:1px solid #ec5941; border-radius:8px; box-shadow:0 0 2px rgba(0,0,0,.25); }
 @media (prefers-color-scheme: dark){ .gb-avatar-invert-marker { background:#333238; } }
@@ -1121,6 +1132,13 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
 .gb-req-status.not-ready { background:#ec5941; border-color:#ec5941; color:#fff; }
 @media (prefers-color-scheme: dark){ .gb-req-status.ready { background:#2da160; } .gb-req-status.not-ready { background:#ec5941; } }
 .gb-inline-cell { display:inline-flex; align-items:center; gap:4px; }
+.gb-inline-cell.right { justify-content:flex-end; }
+.gb-right { text-align:right; }
+.gb-team-miss-container { display:flex; flex-wrap:wrap; gap:4px; }
+.gb-team-miss { background:#ec5941; color:#fff; font-size:10px; padding:2px 4px; border-radius:4px; line-height:1.2; font-family:monospace; }
+.gb-team-miss-block { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+@media (prefers-color-scheme: dark){ .gb-team-miss { background:#ec5941; } }
+body[data-theme='dark'] .gb-team-miss, body.theme-dark .gb-team-miss { background:#ec5941; }
 `;
 
   // src/hooks/usePageTitle.ts
@@ -1132,6 +1150,72 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
         document.title = previous;
       };
     }, [title]);
+  };
+
+  // src/components/NonPersistentTeamReqFilter.tsx
+  var NonPersistentTeamReqFilter = ({ teams, selectedApprovalTeam, setSelectedApprovalTeam, approvalTeamMode, setApprovalTeamMode, selectedReviewerTeam, setSelectedReviewerTeam, reviewerTeamMode, setReviewerTeamMode, approvalsMissingMode, setApprovalsMissingMode, reviewersMissingMode, setReviewersMissingMode, disabled }) => {
+    const [openA, setOpenA] = d2(false);
+    const [openR, setOpenR] = d2(false);
+    const chooseA = (team) => {
+      setSelectedApprovalTeam(team);
+      setOpenA(false);
+    };
+    const chooseR = (team) => {
+      setSelectedReviewerTeam(team);
+      setOpenR(false);
+    };
+    return /* @__PURE__ */ u3("div", { style: { display: "flex", gap: "18px", flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ u3("div", { className: "gb-ephemeral-inner", children: [
+        /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", children: [
+          /* @__PURE__ */ u3("span", { className: "gb-label", title: "Filter by presence of ANY missing team approvals", children: "Approvals missing" }),
+          /* @__PURE__ */ u3("select", { disabled, value: approvalsMissingMode, onChange: (e3) => setApprovalsMissingMode(e3.target.value), className: "gb-pipeline-select", children: [
+            /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+            /* @__PURE__ */ u3("option", { value: "missing", children: "Has missing" }),
+            /* @__PURE__ */ u3("option", { value: "none_missing", children: "None missing" })
+          ] })
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", title: "Filter counts for a specific team approvals requirement", children: [
+          /* @__PURE__ */ u3("span", { className: "gb-label", children: "Team approvals" }),
+          /* @__PURE__ */ u3("select", { disabled, value: approvalTeamMode, onChange: (e3) => setApprovalTeamMode(e3.target.value), className: "gb-pipeline-select", children: [
+            /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+            /* @__PURE__ */ u3("option", { value: "missing", children: "Missing" }),
+            /* @__PURE__ */ u3("option", { value: "ready", children: "Ready" })
+          ] }),
+          /* @__PURE__ */ u3("div", { className: "gb-select", children: [
+            /* @__PURE__ */ u3("div", { className: `gb-select-trigger ${disabled ? "disabled" : ""}`, onClick: () => !disabled && setOpenA((o3) => !o3), children: selectedApprovalTeam || "Select team" }),
+            openA && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+              /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => chooseA(null), children: "(All teams)" }),
+              teams.map((t3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${selectedApprovalTeam === t3 ? "active" : ""}`, onClick: () => chooseA(t3), children: t3 }, t3))
+            ] })
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ u3("div", { className: "gb-ephemeral-inner", children: [
+        /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", children: [
+          /* @__PURE__ */ u3("span", { className: "gb-label", title: "Filter by presence of ANY missing team reviewers", children: "Reviewers missing" }),
+          /* @__PURE__ */ u3("select", { disabled, value: reviewersMissingMode, onChange: (e3) => setReviewersMissingMode(e3.target.value), className: "gb-pipeline-select", children: [
+            /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+            /* @__PURE__ */ u3("option", { value: "missing", children: "Has missing" }),
+            /* @__PURE__ */ u3("option", { value: "none_missing", children: "None missing" })
+          ] })
+        ] }),
+        /* @__PURE__ */ u3("div", { className: "gb-ephemeral-row", title: "Filter counts for a specific team reviewer requirement", children: [
+          /* @__PURE__ */ u3("span", { className: "gb-label", children: "Team reviewers" }),
+          /* @__PURE__ */ u3("select", { disabled, value: reviewerTeamMode, onChange: (e3) => setReviewerTeamMode(e3.target.value), className: "gb-pipeline-select", children: [
+            /* @__PURE__ */ u3("option", { value: "all", children: "All" }),
+            /* @__PURE__ */ u3("option", { value: "missing", children: "Missing" }),
+            /* @__PURE__ */ u3("option", { value: "ready", children: "Ready" })
+          ] }),
+          /* @__PURE__ */ u3("div", { className: "gb-select", children: [
+            /* @__PURE__ */ u3("div", { className: `gb-select-trigger ${disabled ? "disabled" : ""}`, onClick: () => !disabled && setOpenR((o3) => !o3), children: selectedReviewerTeam || "Select team" }),
+            openR && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+              /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => chooseR(null), children: "(All teams)" }),
+              teams.map((t3) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${selectedReviewerTeam === t3 ? "active" : ""}`, onClick: () => chooseR(t3), children: t3 }, t3))
+            ] })
+          ] })
+        ] })
+      ] })
+    ] });
   };
 
   // src/overviewComponent.tsx
@@ -1214,6 +1298,12 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
     const [invertAuthor, setInvertAuthor] = d2(false);
     const [approvalReadyFilter, setApprovalReadyFilter] = d2(() => loadFilters().approvalReadyFilter);
     const [reviewerReadyFilter, setReviewerReadyFilter] = d2(() => loadFilters().reviewerReadyFilter);
+    const [selectedApprovalTeam, setSelectedApprovalTeam] = d2(null);
+    const [approvalTeamMode, setApprovalTeamMode] = d2("all");
+    const [selectedReviewerTeam, setSelectedReviewerTeam] = d2(null);
+    const [reviewerTeamMode, setReviewerTeamMode] = d2("all");
+    const [approvalsMissingMode, setApprovalsMissingMode] = d2("all");
+    const [reviewersMissingMode, setReviewersMissingMode] = d2("all");
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter });
     }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus, approvalReadyFilter, reviewerReadyFilter]);
@@ -1298,7 +1388,48 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       if (mode === "not_ready") return list.filter((mr) => statusMap[mr.id] && !statusMap[mr.id].ready);
       return list;
     };
-    const approvalFiltered = applyReadyFilter(approverFiltered, approvalsStatusByMr, approvalReadyFilter);
+    const applyTeamReqFilters = (list) => {
+      let out = list;
+      if (approvalsMissingMode !== "all") {
+        out = out.filter((mr) => {
+          const counts = approvalsStatusByMr[mr.id]?.teamCounts || [];
+          const hasMissing = counts.some((c3) => c3.have < c3.need);
+          return approvalsMissingMode === "missing" ? hasMissing : !hasMissing;
+        });
+      }
+      if (reviewersMissingMode !== "all") {
+        out = out.filter((mr) => {
+          const counts = reviewersStatusByMr[mr.id]?.teamCounts || [];
+          const hasMissing = counts.some((c3) => c3.have < c3.need);
+          return reviewersMissingMode === "missing" ? hasMissing : !hasMissing;
+        });
+      }
+      if (selectedApprovalTeam) {
+        out = out.filter((mr) => {
+          const counts = approvalsStatusByMr[mr.id]?.teamCounts || [];
+          const entry = counts.find((c3) => c3.team === selectedApprovalTeam);
+          if (!entry) return false;
+          const missing = entry.have < entry.need;
+          if (approvalTeamMode === "missing") return missing;
+          if (approvalTeamMode === "ready") return !missing;
+          return true;
+        });
+      }
+      if (selectedReviewerTeam) {
+        out = out.filter((mr) => {
+          const counts = reviewersStatusByMr[mr.id]?.teamCounts || [];
+          const entry = counts.find((c3) => c3.team === selectedReviewerTeam);
+          if (!entry) return false;
+          const missing = entry.have < entry.need;
+          if (reviewerTeamMode === "missing") return missing;
+          if (reviewerTeamMode === "ready") return !missing;
+          return true;
+        });
+      }
+      return out;
+    };
+    const teamFiltered = applyTeamReqFilters(approverFiltered);
+    const approvalFiltered = applyReadyFilter(teamFiltered, approvalsStatusByMr, approvalReadyFilter);
     const reviewerReadyFiltered = applyReadyFilter(approvalFiltered, reviewersStatusByMr, reviewerReadyFilter);
     const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username === options2.username : mr.author?.username !== options2.username) : reviewerReadyFiltered.filter((mr) => invertAuthor ? mr.author?.username !== selectedAuthor && mr.author?.name !== selectedAuthor : mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : reviewerReadyFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
@@ -1316,6 +1447,7 @@ body[data-theme='dark'] .gb-avatar-invert-marker, body.theme-dark .gb-avatar-inv
       ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus, approvalReadyFilter, setApprovalReadyFilter, reviewerReadyFilter, setReviewerReadyFilter }),
       /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading, invertAuthor, setInvertAuthor }),
+      !!teamReqs.length && /* @__PURE__ */ u3("div", { className: "gb-filter-bar", style: { marginTop: "8px" }, children: /* @__PURE__ */ u3(NonPersistentTeamReqFilter, { teams: teamReqs.map((t3) => t3.name), selectedApprovalTeam, setSelectedApprovalTeam, approvalTeamMode, setApprovalTeamMode, selectedReviewerTeam, setSelectedReviewerTeam, reviewerTeamMode, setReviewerTeamMode, approvalsMissingMode, setApprovalsMissingMode, reviewersMissingMode, setReviewersMissingMode, disabled: reviewMetaLoading }) }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
         /* @__PURE__ */ u3("div", { className: "gb-small-text", children: [
