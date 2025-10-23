@@ -15,14 +15,14 @@ interface OverviewProps { options: Options; initialVisible: boolean }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
 const LS_PROJECT_GROUP_KEY = 'gb_project_group'
-interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean }
+interface PersistFilters { hideDrafts: boolean; onlyHotfixes: boolean; groupByTicket: boolean; pipelineStatus: 'all'|'success'|'failed' }
 const loadFilters = (): PersistFilters => {
   try {
     const raw = localStorage.getItem(LS_FILTER_KEY)
-    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false }
+    if (!raw) return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all' }
     const parsed = JSON.parse(raw)
-    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket }
-  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false } }
+    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes, groupByTicket: !!parsed.groupByTicket, pipelineStatus: parsed.pipelineStatus === 'success' || parsed.pipelineStatus === 'failed' ? parsed.pipelineStatus : 'all' }
+  } catch { return { hideDrafts: false, onlyHotfixes: false, groupByTicket: false, pipelineStatus: 'all' } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
@@ -43,10 +43,11 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [hideDrafts, setHideDrafts] = useState<boolean>(() => loadFilters().hideDrafts)
   const [onlyHotfixes, setOnlyHotfixes] = useState<boolean>(() => loadFilters().onlyHotfixes)
   const [groupByTicket, setGroupByTicket] = useState<boolean>(() => loadFilters().groupByTicket)
+  const [pipelineStatus, setPipelineStatus] = useState<'all'|'success'|'failed'>(() => loadFilters().pipelineStatus)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
-  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket }) }, [hideDrafts, onlyHotfixes, groupByTicket])
+  useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus])
 
   // Page title only while visible
   usePageTitle(visible ? 'Git Buster Overview' : document.title)
@@ -86,7 +87,8 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const titleFiltered = filter.trim() ? mrs.filter(mr => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs
   const draftFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
   const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
-  const projectFiltered = selectedProject ? hotfixFiltered.filter(mr => mr.projectPath.split('/').slice(-1)[0] === selectedProject) : hotfixFiltered
+  const pipelineFiltered = pipelineStatus === 'all' ? hotfixFiltered : hotfixFiltered.filter(mr => mr.head_pipeline && mr.head_pipeline.status === pipelineStatus)
+  const projectFiltered = selectedProject ? pipelineFiltered.filter(mr => mr.projectPath.split('/').slice(-1)[0] === selectedProject) : pipelineFiltered
   const authorFiltered = selectedAuthor
     ? (selectedAuthor === NOT_ME && options.username
         ? projectFiltered.filter(mr => mr.author?.username !== options.username)
@@ -109,7 +111,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
           </select>
         </label>
       </div>
-      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} />
+      <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} username={options.username} disabled={false} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />

@@ -7,6 +7,14 @@ import { UpdatedDate } from './UpdatedDate'
 export interface MRWithProject extends MR { projectPath: string }
 interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
 
+const pipelineCell = (mr: MRWithProject) => {
+  const status = mr.head_pipeline?.status
+  if (!status) return '\u2013'
+  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">✓</span>
+  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">✗</span>
+  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>•</span>
+}
+
 export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr, groupByTicket, sortDirection, setSortDirection }: Props) => {
   const sortedMrs = [...mrs].sort((a,b) => {
     const da = new Date(a.updated_at).getTime();
@@ -17,7 +25,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
   const toggleSort = () => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
   const updatedHeader = (
     <button type="button" className="gb-sortable" onClick={toggleSort} title="Sort by updated date">
-      Updated <span className="gb-sort-indicator">{sortDirection === 'asc' ? '▲' : '▼'}</span>
+      Updated <span className="gb-sort-indicator">{sortDirection === 'asc' ? '\u25b2' : '\u25bc'}</span>
     </button>
   )
 
@@ -31,6 +39,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
             <th className="gb-th">Author</th>
             <th className="gb-th gb-td-small">Approvals</th>
             <th className="gb-th gb-td-small">Reviewers</th>
+            <th className="gb-th gb-td-small">Pipeline</th>
             <th className="gb-th gb-td-small">{updatedHeader}</th>
           </tr>
         </thead>
@@ -63,8 +72,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 </td>
                 <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                 <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-                <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
+                <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                 <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
             )
@@ -106,6 +116,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
           <th className="gb-th">Author</th>
           <th className="gb-th gb-td-small">Approvals</th>
           <th className="gb-th gb-td-small">Reviewers</th>
+          <th className="gb-th gb-td-small">Pipeline</th>
           <th className="gb-th gb-td-small">{updatedHeader}</th>
         </tr>
       </thead>
@@ -113,7 +124,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
         {groups.map(group => (
           <>
             <tr key={`group-${group.key}`} className="gb-group-row">
-              <td className="gb-group-cell" colSpan={6}>
+              <td className="gb-group-cell" colSpan={7}>
                 <div className="gb-group-header">
                   <span className="gb-group-title">{group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}</span>
                   <span className="gb-group-latest" title="Latest updated MR in this group"><UpdatedDate iso={new Date(group.latestTs).toISOString()} /></span>
@@ -148,8 +159,9 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                   </td>
                   <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
                   <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-                  <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
+                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                  <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}</td>
+                  <td className="gb-td gb-td-small">{pipelineCell(mr)}</td>
                   <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>
               )

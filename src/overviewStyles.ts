@@ -4,6 +4,9 @@ export const OVERVIEW_CSS = `
 .gb-container h1 { margin-top:0; }
 .gb-filter-bar { margin-top:10px; padding:8px 12px; border:1px solid #ccc; border-radius:6px; display:flex; gap:18px; align-items:center; font-size:12px; flex-wrap:wrap; }
 .gb-filter-item { display:flex; align-items:center; gap:6px; cursor:pointer; margin-bottom: 0; }
+.gb-pipeline-select { padding:4px 6px; border:1px solid #bbb; border-radius:4px; background:#fff; font-size:12px; }
+@media (prefers-color-scheme: dark) { .gb-pipeline-select { background:#333238; color:#fff; } }
+body[data-theme='dark'] .gb-pipeline-select, body.theme-dark .gb-pipeline-select { background:#333238; color:#fff; }
 .gb-filter-row { margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
 .gb-input { flex:1; min-width:260px; padding:6px 10px; border:1px solid #bbb; border-radius:6px; font-size:13px; }
 .gb-small-text { font-size:12px; opacity:.7; }
@@ -80,4 +83,8 @@ body[data-theme='dark'] .gb-group-latest, body.theme-dark .gb-group-latest { opa
 .gb-date:hover { text-decoration:underline; }
 @media (prefers-color-scheme: dark) { .gb-date { color:#d1d5da; } }
 body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
+.gb-pipeline-status { font-size:12px; display:inline-block; width:16px; text-align:center; font-weight:600; }
+.gb-pipeline-status.success { color:#2da160; }
+.gb-pipeline-status.failed { color:#ec5941; }
+.gb-pipeline-status.other { color:#c17d10; }
 `;

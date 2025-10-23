@@ -19,6 +19,12 @@ export type User = {
     web_url: string;
 }
 
+export type Pipeline = {
+    id: number;
+    status: string; // success, failed, running, pending, canceled, skipped, etc.
+    web_url?: string;
+}
+
 export type MR = {
     id: number;
     iid: number;
@@ -65,6 +71,7 @@ export type MR = {
     has_conflicts: boolean;
     blocking_discussions_resolved: boolean;
     updated_at: string;
+    head_pipeline?: Pipeline | null; // optional pipeline info
 }
 
 export type Approval = {
