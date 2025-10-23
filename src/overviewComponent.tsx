@@ -11,7 +11,7 @@ import { OVERVIEW_CSS } from './overviewStyles'
 import { usePageTitle } from './hooks/usePageTitle'
 import { NOT_ME } from './components/NonPersistentAuthorFilter'
 
-interface OverviewProps { options: Options }
+interface OverviewProps { options: Options; initialVisible: boolean }
 
 const LS_FILTER_KEY = 'gb_persistent_filters'
 const LS_PROJECT_GROUP_KEY = 'gb_project_group'
@@ -21,25 +21,20 @@ const loadFilters = (): PersistFilters => {
     const raw = localStorage.getItem(LS_FILTER_KEY)
     if (!raw) return { hideDrafts: false, onlyHotfixes: false }
     const parsed = JSON.parse(raw)
-    return {
-      hideDrafts: !!parsed.hideDrafts,
-      onlyHotfixes: !!parsed.onlyHotfixes
-    }
+    return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes }
   } catch { return { hideDrafts: false, onlyHotfixes: false } }
 }
 const saveFilters = (f: PersistFilters) => { try { localStorage.setItem(LS_FILTER_KEY, JSON.stringify(f)) } catch {} }
 
-const OverviewPage = ({ options }: OverviewProps) => {
-  // Set page title while overview is displayed
-  usePageTitle('Git Buster Overview')
-
+const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
+  const [visible, setVisible] = useState(initialVisible)
+  // Expose setter globally for index.ts button
+  ;(window as any).gitBusterSetVisible = (v: boolean) => setVisible(!!v)
   const groups: ProjectGroup[] = (options.projects && options.projects.length ? options.projects : PROJECTS)
-  const initialGroup = (() => {
-    try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return groups.find(g => g.name === v)?.name || groups[0].name } catch { return groups[0].name } })()
+  const initialGroup = (() => { try { const v = localStorage.getItem(LS_PROJECT_GROUP_KEY); return groups.find(g => g.name === v)?.name || groups[0].name } catch { return groups[0].name } })()
   const [projectGroup, setProjectGroup] = useState<string>(initialGroup)
-  const [selectedProject, setSelectedProject] = useState<string | null>(null) // no initial selection
+  const [selectedProject, setSelectedProject] = useState<string | null>(null)
   useEffect(() => { try { localStorage.setItem(LS_PROJECT_GROUP_KEY, projectGroup) } catch {} }, [projectGroup])
-  // On group change do not auto-select a project
   useEffect(() => { setSelectedProject(null) }, [projectGroup])
 
   const { mrs, loading, error } = useProjectMergeRequests(options.baseUrl, groups, projectGroup)
@@ -50,10 +45,41 @@ const OverviewPage = ({ options }: OverviewProps) => {
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes }) }, [hideDrafts, onlyHotfixes])
 
+  // Page title only while visible
+  usePageTitle(visible ? 'Git Buster Overview' : document.title)
+
+  // Hide/show main GitLab content
+  useEffect(() => {
+    const main = document.querySelector('#content-body') as HTMLElement || document.querySelector('main') as HTMLElement || document.querySelector('.content-wrapper') as HTMLElement
+    if (main) { main.style.display = visible ? 'none' : '' }
+  }, [visible])
+
+  // Sync URL hash with visibility
+  useEffect(() => {
+    const anchor = 'git-buster'
+    const currentHash = window.location.hash.replace('#','')
+    if (visible && currentHash !== anchor) {
+      history.replaceState(null, '', `${location.pathname}${location.search}#${anchor}`)
+    } else if (!visible && currentHash === anchor) {
+      history.replaceState(null, '', `${location.pathname}${location.search}`)
+    }
+    // Update button color if index keeps reference
+    if ((window as any).gitBusterOnVisibleChange) { (window as any).gitBusterOnVisibleChange(visible) }
+  }, [visible])
+
+  // React to external hash changes (user edits URL)
+  useEffect(() => {
+    const handler = () => {
+      const shouldBeVisible = window.location.hash.replace('#','') === 'git-buster'
+      setVisible(v => v === shouldBeVisible ? v : shouldBeVisible)
+    }
+    window.addEventListener('hashchange', handler)
+    return () => window.removeEventListener('hashchange', handler)
+  }, [])
+
   const authors = Array.from(new Map(mrs.map(mr => [mr.author?.username || '', mr.author])).values()).filter((a): a is any => !!a?.username)
   const projectNames = Array.from(new Set(mrs.map(mr => mr.projectPath.split('/').slice(-1)[0]))).sort((a,b)=>a.localeCompare(b))
 
-  // Filtering pipeline
   const titleFiltered = filter.trim() ? mrs.filter(mr => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs
   const draftFiltered = hideDrafts ? titleFiltered.filter(mr => !isDraftMr(mr)) : titleFiltered
   const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
@@ -63,13 +89,12 @@ const OverviewPage = ({ options }: OverviewProps) => {
         ? projectFiltered.filter(mr => mr.author?.username !== options.username)
         : projectFiltered.filter(mr => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor))
     : projectFiltered
-
-  const visibleMrs = authorFiltered
   const totalHotfixes = mrs.filter(isHotfixMr).length
-  const displayedHotfixes = visibleMrs.filter(isHotfixMr).length
-  const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, visibleMrs, reviewMetaRefreshToken)
+  const displayedHotfixes = authorFiltered.filter(isHotfixMr).length
+  const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, authorFiltered, reviewMetaRefreshToken)
+  const handleRefreshReviewMeta = () => setReviewMetaRefreshToken(t => t + 1)
 
-  const handleRefreshReviewMeta = () => { setReviewMetaRefreshToken(t => t + 1) }
+  if (!visible) { return null }
 
   return (
     <div className="gb-container">
@@ -82,31 +107,31 @@ const OverviewPage = ({ options }: OverviewProps) => {
         </label>
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} />
-      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} username={options.username} />
+      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} username={options.username} disabled={false} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
-        <div className="gb-small-text">{visibleMrs.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
-        <button type="button" onClick={handleRefreshReviewMeta} disabled={reviewMetaLoading || !visibleMrs.length} className="gb-btn" title="Force refetch approvals & reviewers for visible MRs">Refresh review meta</button>
+        <div className="gb-small-text">{authorFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
+        <button type="button" onClick={handleRefreshReviewMeta} disabled={reviewMetaLoading || !authorFiltered.length} className="gb-btn" title="Force refetch approvals & reviewers for visible MRs">Refresh review meta</button>
       </div>
       <div className="gb-section">
         {loading && <div className="gb-sub">Loading merge requests…</div>}
         {error && !loading && <div className="gb-error">Failed to load: {error}</div>}
-        {!loading && !error && !visibleMrs.length && <div className="gb-sub">No opened merge requests found.</div>}
-        {!!visibleMrs.length && <MergeRequestsTable mrs={visibleMrs as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} />}
-        {reviewMetaLoading && !!visibleMrs.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
+        {!loading && !error && !authorFiltered.length && <div className="gb-sub">No opened merge requests found.</div>}
+        {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} />}
+        {reviewMetaLoading && !!authorFiltered.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
       </div>
     </div>
   )
 }
 
-export const mountOverview = (container: HTMLElement, options: Options) => {
+export const mountOverview = (container: HTMLElement, options: Options, initialVisible: boolean) => {
   if (!document.getElementById('gb-overview-styles')) {
     const style = document.createElement('style')
     style.id = 'gb-overview-styles'
     style.textContent = OVERVIEW_CSS
     document.head.appendChild(style)
   }
-  render(<OverviewPage options={options} />, container)
+  render(<OverviewRoot options={options} initialVisible={initialVisible} />, container)
 }
 
 export const unmountOverview = (container: HTMLElement) => { render(null, container) }

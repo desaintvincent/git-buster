@@ -463,9 +463,9 @@
   };
 
   // src/components/NonPersistantFilter.tsx
-  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username, disabled }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
-    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: false, username })
+    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: !!disabled, username })
   ] });
 
   // src/UserAvatar.tsx
@@ -757,10 +757,7 @@
       const raw = localStorage.getItem(LS_FILTER_KEY);
       if (!raw) return { hideDrafts: false, onlyHotfixes: false };
       const parsed = JSON.parse(raw);
-      return {
-        hideDrafts: !!parsed.hideDrafts,
-        onlyHotfixes: !!parsed.onlyHotfixes
-      };
+      return { hideDrafts: !!parsed.hideDrafts, onlyHotfixes: !!parsed.onlyHotfixes };
     } catch {
       return { hideDrafts: false, onlyHotfixes: false };
     }
@@ -771,8 +768,9 @@
     } catch {
     }
   };
-  var OverviewPage = ({ options: options2 }) => {
-    usePageTitle("Git Buster Overview");
+  var OverviewRoot = ({ options: options2, initialVisible }) => {
+    const [visible, setVisible] = d2(initialVisible);
+    window.gitBusterSetVisible = (v3) => setVisible(!!v3);
     const groups = options2.projects && options2.projects.length ? options2.projects : PROJECTS;
     const initialGroup = (() => {
       try {
@@ -802,6 +800,33 @@
     y2(() => {
       saveFilters({ hideDrafts, onlyHotfixes });
     }, [hideDrafts, onlyHotfixes]);
+    usePageTitle(visible ? "Git Buster Overview" : document.title);
+    y2(() => {
+      const main = document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
+      if (main) {
+        main.style.display = visible ? "none" : "";
+      }
+    }, [visible]);
+    y2(() => {
+      const anchor = "git-buster";
+      const currentHash = window.location.hash.replace("#", "");
+      if (visible && currentHash !== anchor) {
+        history.replaceState(null, "", `${location.pathname}${location.search}#${anchor}`);
+      } else if (!visible && currentHash === anchor) {
+        history.replaceState(null, "", `${location.pathname}${location.search}`);
+      }
+      if (window.gitBusterOnVisibleChange) {
+        window.gitBusterOnVisibleChange(visible);
+      }
+    }, [visible]);
+    y2(() => {
+      const handler = () => {
+        const shouldBeVisible = window.location.hash.replace("#", "") === "git-buster";
+        setVisible((v3) => v3 === shouldBeVisible ? v3 : shouldBeVisible);
+      };
+      window.addEventListener("hashchange", handler);
+      return () => window.removeEventListener("hashchange", handler);
+    }, []);
     const authors = Array.from(new Map(mrs.map((mr) => [mr.author?.username || "", mr.author])).values()).filter((a3) => !!a3?.username);
     const projectNames = Array.from(new Set(mrs.map((mr) => mr.projectPath.split("/").slice(-1)[0]))).sort((a3, b) => a3.localeCompare(b));
     const titleFiltered = filter.trim() ? mrs.filter((mr) => mr.title.toLowerCase().includes(filter.toLowerCase())) : mrs;
@@ -809,24 +834,24 @@
     const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
     const projectFiltered = selectedProject ? hotfixFiltered.filter((mr) => mr.projectPath.split("/").slice(-1)[0] === selectedProject) : hotfixFiltered;
     const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? projectFiltered.filter((mr) => mr.author?.username !== options2.username) : projectFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : projectFiltered;
-    const visibleMrs = authorFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
-    const displayedHotfixes = visibleMrs.filter(isHotfixMr).length;
-    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, visibleMrs, reviewMetaRefreshToken);
-    const handleRefreshReviewMeta = () => {
-      setReviewMetaRefreshToken((t3) => t3 + 1);
-    };
+    const displayedHotfixes = authorFiltered.filter(isHotfixMr).length;
+    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, authorFiltered, reviewMetaRefreshToken);
+    const handleRefreshReviewMeta = () => setReviewMetaRefreshToken((t3) => t3 + 1);
+    if (!visible) {
+      return null;
+    }
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
       /* @__PURE__ */ u3("div", { className: "gb-header-row", children: [
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes }),
-      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username: options2.username }),
+      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username: options2.username, disabled: false }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
         /* @__PURE__ */ u3("div", { className: "gb-small-text", children: [
-          visibleMrs.length,
+          authorFiltered.length,
           "/",
           mrs.length,
           " displayed \xB7 Hotfixes: ",
@@ -834,7 +859,7 @@
           "/",
           totalHotfixes
         ] }),
-        /* @__PURE__ */ u3("button", { type: "button", onClick: handleRefreshReviewMeta, disabled: reviewMetaLoading || !visibleMrs.length, className: "gb-btn", title: "Force refetch approvals & reviewers for visible MRs", children: "Refresh review meta" })
+        /* @__PURE__ */ u3("button", { type: "button", onClick: handleRefreshReviewMeta, disabled: reviewMetaLoading || !authorFiltered.length, className: "gb-btn", title: "Force refetch approvals & reviewers for visible MRs", children: "Refresh review meta" })
       ] }),
       /* @__PURE__ */ u3("div", { className: "gb-section", children: [
         loading && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "Loading merge requests\u2026" }),
@@ -842,23 +867,20 @@
           "Failed to load: ",
           error
         ] }),
-        !loading && !error && !visibleMrs.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
-        !!visibleMrs.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: visibleMrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }),
-        reviewMetaLoading && !!visibleMrs.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
+        !loading && !error && !authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-sub", children: "No opened merge requests found." }),
+        !!authorFiltered.length && /* @__PURE__ */ u3(MergeRequestsTable, { mrs: authorFiltered, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }),
+        reviewMetaLoading && !!authorFiltered.length && /* @__PURE__ */ u3("div", { className: "gb-helper", children: "Loading approvals & reviewers\u2026" })
       ] })
     ] });
   };
-  var mountOverview = (container, options2) => {
+  var mountOverview = (container, options2, initialVisible) => {
     if (!document.getElementById("gb-overview-styles")) {
       const style = document.createElement("style");
       style.id = "gb-overview-styles";
       style.textContent = OVERVIEW_CSS;
       document.head.appendChild(style);
     }
-    G(/* @__PURE__ */ u3(OverviewPage, { options: options2 }), container);
-  };
-  var unmountOverview = (container) => {
-    G(null, container);
+    G(/* @__PURE__ */ u3(OverviewRoot, { options: options2, initialVisible }), container);
   };
 
   // src/index.ts
@@ -877,54 +899,22 @@
       projects: PROJECTS
     };
   };
-  var getMainContentContainer = () => {
-    return document.querySelector("#content-body") || document.querySelector("main") || document.querySelector(".content-wrapper");
-  };
-  var removeSyntheticPage = () => {
-    const page = document.getElementById(EXT_PAGE_ID);
-    if (page) {
-      unmountOverview(page);
-      page.remove();
+  var createOrGetPageContainer = () => {
+    let page = document.getElementById(EXT_PAGE_ID);
+    if (!page) {
+      page = document.createElement("div");
+      page.id = EXT_PAGE_ID;
+      const containerTarget = document.querySelector(".content-wrapper") || document.body;
+      containerTarget.appendChild(page);
     }
-    const main = getMainContentContainer();
-    if (main) {
-      main.style.display = "";
-    }
-  };
-  var renderSyntheticPage = async () => {
-    removeSyntheticPage();
-    const main = getMainContentContainer();
-    if (main) {
-      main.style.display = "none";
-    }
-    const page = document.createElement("div");
-    page.id = EXT_PAGE_ID;
-    const containerTarget = document.querySelector(".content-wrapper") || document.body;
-    containerTarget.appendChild(page);
-    try {
-      mountOverview(page, options);
-    } catch (e3) {
-      page.innerHTML = `<div style="color:#ec5941;padding:24px;font-family:var(--gl-font-family,system-ui,sans-serif)">Failed to build overview: ${e3.message}</div>`;
-      console.error("[git-buster] overview error", e3);
-    }
+    return page;
   };
   var updateSidebarButtonState = () => {
     const btn = document.getElementById(EXT_SIDEBAR_BTN_ID);
     if (btn) {
+      ;
       btn.style.background = syntheticPageVisible ? "#094d8b" : "#1f78d1";
       btn.setAttribute("aria-expanded", syntheticPageVisible ? "true" : "false");
-    }
-  };
-  var updateUrlForVisibility = () => {
-    const currentHash = window.location.hash.replace("#", "");
-    if (syntheticPageVisible) {
-      if (currentHash !== URL_ANCHOR) {
-        history.replaceState(null, "", `${location.pathname}${location.search}#${URL_ANCHOR}`);
-      }
-    } else {
-      if (currentHash === URL_ANCHOR) {
-        history.replaceState(null, "", `${location.pathname}${location.search}`);
-      }
     }
   };
   var ensureSidebarButton = () => {
@@ -975,16 +965,11 @@
       item.style.filter = "none";
     });
     item.addEventListener("click", (e3) => {
-      console.log("====> click on button", syntheticPageVisible);
       e3.preventDefault();
-      syntheticPageVisible = !syntheticPageVisible;
-      if (syntheticPageVisible) {
-        renderSyntheticPage();
-      } else {
-        removeSyntheticPage();
+      const next = !syntheticPageVisible;
+      if (typeof window.gitBusterSetVisible === "function") {
+        window.gitBusterSetVisible(next);
       }
-      updateUrlForVisibility();
-      updateSidebarButtonState();
     });
     if (mode === "topbar") {
       const parentIsFlex = getComputedStyle(target).display.includes("flex");
@@ -1007,10 +992,6 @@
       }
     }
     updateSidebarButtonState();
-    if (!syntheticPageVisible && window.location.hash.replace("#", "") === URL_ANCHOR) {
-      syntheticPageVisible = true;
-      renderSyntheticPage().then(() => updateSidebarButtonState());
-    }
   };
   var startSidebarObserver = () => {
     if (sidebarObserverStarted) {
@@ -1030,24 +1011,20 @@
     if (!options.enable || !options.baseUrl || !document.location.href.startsWith(options.baseUrl)) {
       return;
     }
-    if (window.location.hash.replace("#", "") === URL_ANCHOR) {
-      console.log("====> initial visible from url");
-      syntheticPageVisible = true;
-    }
+    syntheticPageVisible = window.location.hash.replace("#", "") === URL_ANCHOR;
+    window.gitBusterOnVisibleChange = (v3) => {
+      syntheticPageVisible = v3;
+      updateSidebarButtonState();
+    };
     ensureSidebarButton();
     startSidebarObserver();
-    await renderSyntheticPage();
+    const container = createOrGetPageContainer();
+    mountOverview(container, options, syntheticPageVisible);
     updateSidebarButtonState();
     window.addEventListener("hashchange", () => {
       const shouldBeVisible = window.location.hash.replace("#", "") === URL_ANCHOR;
-      if (shouldBeVisible !== syntheticPageVisible) {
-        syntheticPageVisible = shouldBeVisible;
-        if (syntheticPageVisible) {
-          renderSyntheticPage();
-        } else {
-          removeSyntheticPage();
-        }
-        updateSidebarButtonState();
+      if (shouldBeVisible !== syntheticPageVisible && typeof window.gitBusterSetVisible === "function") {
+        window.gitBusterSetVisible(shouldBeVisible);
       }
     });
     const isEditableTarget = (el) => {
@@ -1061,20 +1038,11 @@
           return;
         }
         e3.preventDefault();
-        syntheticPageVisible = !syntheticPageVisible;
-        if (syntheticPageVisible) {
-          renderSyntheticPage();
-        } else {
-          removeSyntheticPage();
+        if (typeof window.gitBusterSetVisible === "function") {
+          window.gitBusterSetVisible(!syntheticPageVisible);
         }
-        updateUrlForVisibility();
-        updateSidebarButtonState();
       }
     });
   };
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => init());
-  } else {
-    init();
-  }
+  init();
 })();
