@@ -6,53 +6,90 @@ import { extractJiraTicket, formatUpdatedAt, isDraftMr } from '../utils/mrUtils'
 export interface MRWithProject extends MR { projectPath: string }
 interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]> }
 
-export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }: Props) => (
-  <table className="gb-table">
-    <thead>
-      <tr>
-        <th className="gb-th">Title</th>
-        <th className="gb-th">Project</th>
-        <th className="gb-th">Author</th>
-        <th className="gb-th gb-td-small">Approvals</th>
-        <th className="gb-th gb-td-small">Reviewers</th>
-        <th className="gb-th gb-td-small">Updated</th>
-      </tr>
-    </thead>
-    <tbody>
-      {mrs.map(mr => {
-        const ticket = extractJiraTicket(mr.title)
-        const disabled = !ticket
-        const addTicket = () => {
-          if (!ticket) return
-          const parts = filter.trim().split(/\s+/).filter(Boolean)
-          if (parts.includes(ticket)) return
-          setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket)
-        }
-        const approvalsUsers = approvalsUsersByMr[mr.id] || []
-        const reviewersUsers = reviewersUsersByMr[mr.id] || []
-        return (
-          <tr key={mr.id}>
-            <td className="gb-td">
-              <div className="gb-mr-title-block">
-                <div className="gb-mr-title-line">
-                  <span className="gb-mr-iid">!{mr.iid}</span>
-                  {isDraftMr(mr) && <span className="gb-mr-draft">Draft:</span>}
-                  <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
-                </div>
-                <div className="gb-mr-meta-line">
-                  <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                  <span className="gb-mr-branches">{mr.source_branch} → {mr.target_branch}</span>
-                </div>
-              </div>
-            </td>
-            <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
-            <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
-            <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-            <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-            <td className="gb-td gb-td-small">{formatUpdatedAt(mr.updated_at)}</td>
-          </tr>
-        )
-      })}
-    </tbody>
-  </table>
-)
+export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }: Props) => {
+  // Group by JIRA ticket (uppercase) or __NO_TICKET__ sentinel
+  type Group = { key: string; ticket: string | null; items: MRWithProject[] }
+  const groupMap = new Map<string, Group>()
+  for (const mr of mrs) {
+    const ticket = extractJiraTicket(mr.title)
+    const key = ticket || '__NO_TICKET__'
+    if (!groupMap.has(key)) {
+      groupMap.set(key, { key, ticket, items: [] })
+    }
+    groupMap.get(key)!.items.push(mr)
+  }
+  const groups: Group[] = []
+  // Separate ticket groups and no-ticket group for ordering
+  const ticketGroups: Group[] = []
+  let noTicketGroup: Group | undefined
+  for (const g of groupMap.values()) {
+    if (g.ticket) {
+        ticketGroups.push(g)
+    } else {
+        noTicketGroup = g
+    }
+  }
+  ticketGroups.sort((a,b) => a.ticket!.localeCompare(b.ticket!))
+  groups.push(...ticketGroups)
+  if (noTicketGroup) groups.push(noTicketGroup)
+
+  return (
+    <table className="gb-table">
+      <thead>
+        <tr>
+          <th className="gb-th">Title</th>
+          <th className="gb-th">Project</th>
+          <th className="gb-th">Author</th>
+          <th className="gb-th gb-td-small">Approvals</th>
+          <th className="gb-th gb-td-small">Reviewers</th>
+          <th className="gb-th gb-td-small">Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {groups.map(group => (
+          <>
+            <tr key={`group-${group.key}`} className="gb-group-row">
+              <td className="gb-group-cell" colSpan={6}>
+                {group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}
+              </td>
+            </tr>
+            {group.items.map(mr => {
+              const ticket = extractJiraTicket(mr.title)
+              const disabled = !ticket
+              const addTicket = () => {
+                if (!ticket) return
+                const parts = filter.trim().split(/\s+/).filter(Boolean)
+                if (parts.includes(ticket)) return
+                setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket)
+              }
+              const approvalsUsers = approvalsUsersByMr[mr.id] || []
+              const reviewersUsers = reviewersUsersByMr[mr.id] || []
+              return (
+                <tr key={mr.id}>
+                  <td className="gb-td">
+                    <div className="gb-mr-title-block">
+                      <div className="gb-mr-title-line">
+                        <span className="gb-mr-iid">!{mr.iid}</span>
+                        {isDraftMr(mr) && <span className="gb-mr-draft">Draft:</span>}
+                        <a href={mr.web_url} target="_blank" className="gb-mr-link" title={mr.title}>{isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i,'') : mr.title}</a>
+                      </div>
+                      <div className="gb-mr-meta-line">
+                        <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
+                        <span className="gb-mr-branches">{mr.source_branch} → {mr.target_branch}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="gb-td">{mr.projectPath.split('/').slice(-1)[0]}</td>
+                  <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
+                  <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
+                  <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
+                  <td className="gb-td gb-td-small">{formatUpdatedAt(mr.updated_at)}</td>
+                </tr>
+              )
+            })}
+          </>
+        ))}
+      </tbody>
+    </table>
+  )
+}

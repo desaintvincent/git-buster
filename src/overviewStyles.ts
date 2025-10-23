@@ -58,4 +58,14 @@ export const OVERVIEW_CSS = `
 .gb-group-select-label { display:flex; align-items:center; gap:6px; font-size:12px; }
 .gb-group-select-text { font-weight:600; font-size:12px; }
 .gb-group-select { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; color:#fff; font-size:12px; }
+.gb-group-row .gb-group-cell { background:#e6ebf1; font-weight:600; font-size:12px; padding:6px 8px; border-top:2px solid #444; color:#222; letter-spacing:.25px; }
+.gb-group-row:first-child .gb-group-cell { border-top:2px solid #444; }
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5; border-top:2px solid #555; }
+}
+body[data-theme='dark'] .gb-group-row .gb-group-cell,
+body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5; border-top:2px solid #555; }
+/* Extra separation between successive groups */
+.gb-group-row + .gb-group-row .gb-group-cell { border-top:3px solid #444; }
 `;

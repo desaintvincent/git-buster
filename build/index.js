@@ -489,53 +489,80 @@
   };
 
   // src/components/MergeRequestsTable.tsx
-  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }) => /* @__PURE__ */ u3("table", { className: "gb-table", children: [
-    /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
-      /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
-      /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
-      /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
-      /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
-      /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
-      /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Updated" })
-    ] }) }),
-    /* @__PURE__ */ u3("tbody", { children: mrs.map((mr) => {
+  var MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr, reviewersUsersByMr }) => {
+    const groupMap = /* @__PURE__ */ new Map();
+    for (const mr of mrs) {
       const ticket = extractJiraTicket(mr.title);
-      const disabled = !ticket;
-      const addTicket = () => {
-        if (!ticket) return;
-        const parts = filter.trim().split(/\s+/).filter(Boolean);
-        if (parts.includes(ticket)) return;
-        setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket);
-      };
-      const approvalsUsers = approvalsUsersByMr[mr.id] || [];
-      const reviewersUsers = reviewersUsersByMr[mr.id] || [];
-      return /* @__PURE__ */ u3("tr", { children: [
-        /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
-          /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
-            /* @__PURE__ */ u3("span", { className: "gb-mr-iid", children: [
-              "!",
-              mr.iid
-            ] }),
-            isDraftMr(mr) && /* @__PURE__ */ u3("span", { className: "gb-mr-draft", children: "Draft:" }),
-            /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
-          ] }),
-          /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
-            /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
-            /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
-              mr.source_branch,
-              " \u2192 ",
-              mr.target_branch
-            ] })
-          ] })
-        ] }) }),
-        /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
-        /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
-        /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-        /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-        /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: formatUpdatedAt(mr.updated_at) })
-      ] }, mr.id);
-    }) })
-  ] });
+      const key = ticket || "__NO_TICKET__";
+      if (!groupMap.has(key)) {
+        groupMap.set(key, { key, ticket, items: [] });
+      }
+      groupMap.get(key).items.push(mr);
+    }
+    const groups = [];
+    const ticketGroups = [];
+    let noTicketGroup;
+    for (const g2 of groupMap.values()) {
+      if (g2.ticket) {
+        ticketGroups.push(g2);
+      } else {
+        noTicketGroup = g2;
+      }
+    }
+    ticketGroups.sort((a3, b) => a3.ticket.localeCompare(b.ticket));
+    groups.push(...ticketGroups);
+    if (noTicketGroup) groups.push(noTicketGroup);
+    return /* @__PURE__ */ u3("table", { className: "gb-table", children: [
+      /* @__PURE__ */ u3("thead", { children: /* @__PURE__ */ u3("tr", { children: [
+        /* @__PURE__ */ u3("th", { className: "gb-th", children: "Title" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th", children: "Project" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th", children: "Author" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Approvals" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Reviewers" }),
+        /* @__PURE__ */ u3("th", { className: "gb-th gb-td-small", children: "Updated" })
+      ] }) }),
+      /* @__PURE__ */ u3("tbody", { children: groups.map((group) => /* @__PURE__ */ u3(k, { children: [
+        /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 6, children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }) }, `group-${group.key}`),
+        group.items.map((mr) => {
+          const ticket = extractJiraTicket(mr.title);
+          const disabled = !ticket;
+          const addTicket = () => {
+            if (!ticket) return;
+            const parts = filter.trim().split(/\s+/).filter(Boolean);
+            if (parts.includes(ticket)) return;
+            setFilter(filter.trim().length ? `${filter.trim()} ${ticket}` : ticket);
+          };
+          const approvalsUsers = approvalsUsersByMr[mr.id] || [];
+          const reviewersUsers = reviewersUsersByMr[mr.id] || [];
+          return /* @__PURE__ */ u3("tr", { children: [
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: /* @__PURE__ */ u3("div", { className: "gb-mr-title-block", children: [
+              /* @__PURE__ */ u3("div", { className: "gb-mr-title-line", children: [
+                /* @__PURE__ */ u3("span", { className: "gb-mr-iid", children: [
+                  "!",
+                  mr.iid
+                ] }),
+                isDraftMr(mr) && /* @__PURE__ */ u3("span", { className: "gb-mr-draft", children: "Draft:" }),
+                /* @__PURE__ */ u3("a", { href: mr.web_url, target: "_blank", className: "gb-mr-link", title: mr.title, children: isDraftMr(mr) ? mr.title.replace(/^\s*(?:draft:|wip:)\s*/i, "") : mr.title })
+              ] }),
+              /* @__PURE__ */ u3("div", { className: "gb-mr-meta-line", children: [
+                /* @__PURE__ */ u3("button", { type: "button", onClick: addTicket, disabled, title: disabled ? "No JIRA-like ticket (ABC-123) found in title" : `Add ${ticket} to title filter`, className: "gb-magnify-btn", children: "\u{1F50D}" }),
+                /* @__PURE__ */ u3("span", { className: "gb-mr-branches", children: [
+                  mr.source_branch,
+                  " \u2192 ",
+                  mr.target_branch
+                ] })
+              ] })
+            ] }) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.projectPath.split("/").slice(-1)[0] }),
+            /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: formatUpdatedAt(mr.updated_at) })
+          ] }, mr.id);
+        })
+      ] })) })
+    ] });
+  };
 
   // src/hooks/useProjectMergeRequests.ts
   var fetchOpenedMrsForProject = async (baseUrl, projectPath) => {
@@ -735,6 +762,16 @@
 .gb-group-select-label { display:flex; align-items:center; gap:6px; font-size:12px; }
 .gb-group-select-text { font-weight:600; font-size:12px; }
 .gb-group-select { padding:6px 10px; border:1px solid #bbb; border-radius:6px; background:#333238; color:#fff; font-size:12px; }
+.gb-group-row .gb-group-cell { background:#e6ebf1; font-weight:600; font-size:12px; padding:6px 8px; border-top:2px solid #444; color:#222; letter-spacing:.25px; }
+.gb-group-row:first-child .gb-group-cell { border-top:2px solid #444; }
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5; border-top:2px solid #555; }
+}
+body[data-theme='dark'] .gb-group-row .gb-group-cell,
+body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5; border-top:2px solid #555; }
+/* Extra separation between successive groups */
+.gb-group-row + .gb-group-row .gb-group-cell { border-top:3px solid #444; }
 `;
 
   // src/hooks/usePageTitle.ts
