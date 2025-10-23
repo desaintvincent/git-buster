@@ -468,10 +468,78 @@
     ] });
   };
 
+  // src/components/NonPersistentReviewerFilter.tsx
+  var NonPersistentReviewerFilter = ({ users, selectedReviewer, setSelectedReviewer, invert, setInvert, disabled }) => {
+    const [open, setOpen] = d2(false);
+    const unique = users.filter((u4) => !!u4?.username);
+    const current = unique.find((u4) => u4.username === selectedReviewer) || null;
+    const choose = (usernameChoice) => {
+      setSelectedReviewer(usernameChoice);
+      setOpen(false);
+    };
+    return /* @__PURE__ */ u3("div", { className: "gb-select", title: "Filter by reviewers (from approvals/comments excluding author)", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), children: [
+        current && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "Reviewer" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: [
+          current ? current.username : "",
+          invert && current ? " (not)" : ""
+        ] })
+      ] }),
+      open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All reviewers" }) }),
+        unique.map((u4) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${u4.username === selectedReviewer ? "active" : ""}`, onClick: () => choose(u4.username), children: [
+          /* @__PURE__ */ u3("img", { src: u4.avatar_url, alt: u4.username, className: "gb-avatar" }),
+          /* @__PURE__ */ u3("span", { children: u4.username })
+        ] }, u4.id)),
+        !unique.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No reviewers" }),
+        /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
+          /* @__PURE__ */ u3("input", { type: "checkbox", checked: invert, onChange: (e3) => setInvert(e3.target.checked) }),
+          " ",
+          /* @__PURE__ */ u3("span", { children: "Not reviewed by selected" })
+        ] })
+      ] })
+    ] });
+  };
+
+  // src/components/NonPersistentApproverFilter.tsx
+  var NonPersistentApproverFilter = ({ users, selectedApprover, setSelectedApprover, invert, setInvert, disabled }) => {
+    const [open, setOpen] = d2(false);
+    const unique = users.filter((u4) => !!u4?.username);
+    const current = unique.find((u4) => u4.username === selectedApprover) || null;
+    const choose = (usernameChoice) => {
+      setSelectedApprover(usernameChoice);
+      setOpen(false);
+    };
+    return /* @__PURE__ */ u3("div", { className: "gb-select", title: "Filter by approvers (users who approved)", children: [
+      /* @__PURE__ */ u3("button", { type: "button", className: `gb-select-trigger ${disabled ? "disabled" : ""}`, disabled, onClick: () => !disabled && setOpen(!open), children: [
+        current && current.avatar_url ? /* @__PURE__ */ u3("img", { src: current.avatar_url, alt: current.username, className: "gb-avatar" }) : /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "Approver" }),
+        /* @__PURE__ */ u3("span", { className: "gb-select-value", children: [
+          current ? current.username : "",
+          invert && current ? " (not)" : ""
+        ] })
+      ] }),
+      open && !disabled && /* @__PURE__ */ u3("div", { className: "gb-select-menu", children: [
+        /* @__PURE__ */ u3("div", { className: `gb-select-item ${!current ? "active" : ""}`, onClick: () => choose(null), children: /* @__PURE__ */ u3("span", { className: "gb-select-placeholder", children: "All approvers" }) }),
+        unique.map((u4) => /* @__PURE__ */ u3("div", { className: `gb-select-item ${u4.username === selectedApprover ? "active" : ""}`, onClick: () => choose(u4.username), children: [
+          /* @__PURE__ */ u3("img", { src: u4.avatar_url, alt: u4.username, className: "gb-avatar" }),
+          /* @__PURE__ */ u3("span", { children: u4.username })
+        ] }, u4.id)),
+        !unique.length && /* @__PURE__ */ u3("div", { className: "gb-select-empty", children: "No approvers" }),
+        /* @__PURE__ */ u3("div", { className: "gb-select-item", onClick: () => setInvert(!invert), children: [
+          /* @__PURE__ */ u3("input", { type: "checkbox", checked: invert, onChange: (e3) => setInvert(e3.target.checked) }),
+          " ",
+          /* @__PURE__ */ u3("span", { children: "Not approved by selected" })
+        ] })
+      ] })
+    ] });
+  };
+
   // src/components/NonPersistantFilter.tsx
-  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username, disabled }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
+  var NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading }) => /* @__PURE__ */ u3("div", { className: "gb-filter-bar", children: [
     /* @__PURE__ */ u3(NonPersistentProjectFilter, { projects, selectedProject, setSelectedProject }),
-    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: !!disabled, username })
+    /* @__PURE__ */ u3(NonPersistentAuthorFilter, { authors, selectedAuthor, setSelectedAuthor, disabled: !!disabled, username }),
+    /* @__PURE__ */ u3(NonPersistentReviewerFilter, { users: reviewerUsers, selectedReviewer, setSelectedReviewer, invert: invertReviewer, setInvert: setInvertReviewer, disabled: reviewMetaLoading }),
+    /* @__PURE__ */ u3(NonPersistentApproverFilter, { users: approverUsers, selectedApprover, setSelectedApprover, invert: invertApprover, setInvert: setInvertApprover, disabled: reviewMetaLoading })
   ] });
 
   // src/UserAvatar.tsx
@@ -1024,6 +1092,10 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
     const [groupByTicket, setGroupByTicket] = d2(() => loadFilters().groupByTicket);
     const [pipelineStatus, setPipelineStatus] = d2(() => loadFilters().pipelineStatus);
     const [selectedAuthor, setSelectedAuthor] = d2(null);
+    const [selectedReviewer, setSelectedReviewer] = d2(null);
+    const [invertReviewer, setInvertReviewer] = d2(false);
+    const [selectedApprover, setSelectedApprover] = d2(null);
+    const [invertApprover, setInvertApprover] = d2(false);
     const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = d2(0);
     const [sortDirection, setSortDirection] = d2("desc");
     y2(() => {
@@ -1063,21 +1135,33 @@ body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
     const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered;
     const pipelineFiltered = pipelineStatus === "all" ? hotfixFiltered : hotfixFiltered.filter((mr) => mr.head_pipeline && mr.head_pipeline.status === pipelineStatus);
     const projectFiltered = selectedProject ? pipelineFiltered.filter((mr) => mr.projectPath.split("/").slice(-1)[0] === selectedProject) : pipelineFiltered;
-    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? projectFiltered.filter((mr) => mr.author?.username !== options2.username) : projectFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : projectFiltered;
+    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, projectFiltered, reviewMetaRefreshToken);
+    const reviewerFiltered = selectedReviewer ? projectFiltered.filter((mr) => {
+      const reviewers = reviewersUsersByMr[mr.id] || [];
+      const has = reviewers.some((u4) => u4.username === selectedReviewer);
+      return invertReviewer ? !has : has;
+    }) : projectFiltered;
+    const approverFiltered = selectedApprover ? reviewerFiltered.filter((mr) => {
+      const approvers = approvalsUsersByMr[mr.id] || [];
+      const has = approvers.some((u4) => u4.username === selectedApprover);
+      return invertApprover ? !has : has;
+    }) : reviewerFiltered;
+    const authorFiltered = selectedAuthor ? selectedAuthor === NOT_ME && options2.username ? approverFiltered.filter((mr) => mr.author?.username !== options2.username) : approverFiltered.filter((mr) => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor) : approverFiltered;
     const totalHotfixes = mrs.filter(isHotfixMr).length;
     const displayedHotfixes = authorFiltered.filter(isHotfixMr).length;
-    const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options2.baseUrl, authorFiltered, reviewMetaRefreshToken);
     const handleRefreshReviewMeta = () => setReviewMetaRefreshToken((t3) => t3 + 1);
     if (!visible) {
       return null;
     }
+    const reviewerUsers = Array.from(new Map(projectFiltered.flatMap((mr) => (reviewersUsersByMr[mr.id] || []).map((u4) => [u4.username, u4]))).values()).filter((u4) => !!u4?.username);
+    const approverUsers = Array.from(new Map(projectFiltered.flatMap((mr) => (approvalsUsersByMr[mr.id] || []).map((u4) => [u4.username, u4]))).values()).filter((u4) => !!u4?.username);
     return /* @__PURE__ */ u3("div", { className: "gb-container", children: [
       /* @__PURE__ */ u3("div", { className: "gb-header-row", children: [
         /* @__PURE__ */ u3("h1", { children: "Git Buster Overview" }),
         /* @__PURE__ */ u3("label", { className: "gb-group-select-label", children: /* @__PURE__ */ u3("select", { className: "gb-group-select", value: projectGroup, onChange: (e3) => setProjectGroup(e3.target.value), children: groups.map((g2) => /* @__PURE__ */ u3("option", { value: g2.name, children: g2.name }, g2.name)) }) })
       ] }),
       /* @__PURE__ */ u3(PersistentFilterBar, { hideDrafts, setHideDrafts, onlyHotfixes, setOnlyHotfixes, groupByTicket, setGroupByTicket, pipelineStatus, setPipelineStatus }),
-      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, username: options2.username, disabled: false }),
+      /* @__PURE__ */ u3(NonPersistantFilter, { projects: projectNames, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username: options2.username, disabled: false, reviewMetaLoading }),
       /* @__PURE__ */ u3("div", { className: "gb-filter-row", children: [
         /* @__PURE__ */ u3("input", { value: filter, onInput: (e3) => setFilter(e3.target.value), placeholder: "Filter MRs by title...", className: "gb-input" }),
         /* @__PURE__ */ u3("div", { className: "gb-small-text", children: [

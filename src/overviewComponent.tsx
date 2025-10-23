@@ -45,6 +45,10 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const [groupByTicket, setGroupByTicket] = useState<boolean>(() => loadFilters().groupByTicket)
   const [pipelineStatus, setPipelineStatus] = useState<'all'|'success'|'failed'>(() => loadFilters().pipelineStatus)
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null)
+  const [selectedReviewer, setSelectedReviewer] = useState<string | null>(null)
+  const [invertReviewer, setInvertReviewer] = useState<boolean>(false)
+  const [selectedApprover, setSelectedApprover] = useState<string | null>(null)
+  const [invertApprover, setInvertApprover] = useState<boolean>(false)
   const [reviewMetaRefreshToken, setReviewMetaRefreshToken] = useState(0)
   const [sortDirection, setSortDirection] = useState<'asc'|'desc'>('desc') // updated column sort
   useEffect(() => { saveFilters({ hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus }) }, [hideDrafts, onlyHotfixes, groupByTicket, pipelineStatus])
@@ -89,17 +93,34 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   const hotfixFiltered = onlyHotfixes ? draftFiltered.filter(isHotfixMr) : draftFiltered
   const pipelineFiltered = pipelineStatus === 'all' ? hotfixFiltered : hotfixFiltered.filter(mr => mr.head_pipeline && mr.head_pipeline.status === pipelineStatus)
   const projectFiltered = selectedProject ? pipelineFiltered.filter(mr => mr.projectPath.split('/').slice(-1)[0] === selectedProject) : pipelineFiltered
+  // Fetch review meta (approvals/reviewers) for projectFiltered set (before reviewer/approver filters)
+  const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, projectFiltered, reviewMetaRefreshToken)
+  // Apply reviewer filter
+  const reviewerFiltered = selectedReviewer ? projectFiltered.filter(mr => {
+    const reviewers = reviewersUsersByMr[mr.id] || []
+    const has = reviewers.some(u => u.username === selectedReviewer)
+    return invertReviewer ? !has : has
+  }) : projectFiltered
+  // Apply approver filter
+  const approverFiltered = selectedApprover ? reviewerFiltered.filter(mr => {
+    const approvers = approvalsUsersByMr[mr.id] || []
+    const has = approvers.some(u => u.username === selectedApprover)
+    return invertApprover ? !has : has
+  }) : reviewerFiltered
+  // Apply author filter last
   const authorFiltered = selectedAuthor
     ? (selectedAuthor === NOT_ME && options.username
-        ? projectFiltered.filter(mr => mr.author?.username !== options.username)
-        : projectFiltered.filter(mr => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor))
-    : projectFiltered
+        ? approverFiltered.filter(mr => mr.author?.username !== options.username)
+        : approverFiltered.filter(mr => mr.author?.username === selectedAuthor || mr.author?.name === selectedAuthor))
+    : approverFiltered
   const totalHotfixes = mrs.filter(isHotfixMr).length
   const displayedHotfixes = authorFiltered.filter(isHotfixMr).length
-  const { approvalsUsersByMr, reviewersUsersByMr, loading: reviewMetaLoading } = useReviewMeta(options.baseUrl, authorFiltered, reviewMetaRefreshToken)
   const handleRefreshReviewMeta = () => setReviewMetaRefreshToken(t => t + 1)
 
   if (!visible) { return null }
+
+  const reviewerUsers = Array.from(new Map(projectFiltered.flatMap(mr => (reviewersUsersByMr[mr.id]||[]).map(u => [u.username, u]))).values()).filter(u => !!u?.username)
+  const approverUsers = Array.from(new Map(projectFiltered.flatMap(mr => (approvalsUsersByMr[mr.id]||[]).map(u => [u.username, u]))).values()).filter(u => !!u?.username)
 
   return (
     <div className="gb-container">
@@ -112,7 +133,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         </label>
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} />
-      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} username={options.username} disabled={false} />
+      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} />
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />
         <div className="gb-small-text">{authorFiltered.length}/{mrs.length} displayed · Hotfixes: {displayedHotfixes}/{totalHotfixes}</div>
