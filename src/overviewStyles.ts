@@ -76,4 +76,8 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
 .gb-group-latest { font-size:11px; opacity:.75; font-family:monospace; }
 @media (prefers-color-scheme: dark) { .gb-group-latest { opacity:.85; } }
 body[data-theme='dark'] .gb-group-latest, body.theme-dark .gb-group-latest { opacity:.85; }
+.gb-date { font-size:11px; font-family:monospace; white-space:nowrap; cursor:help; }
+.gb-date:hover { text-decoration:underline; }
+@media (prefers-color-scheme: dark) { .gb-date { color:#d1d5da; } }
+body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 `;

@@ -1,7 +1,8 @@
 import type { MR } from '../types'
 import type { User } from '../types'
 import { UserAvatar } from '../UserAvatar'
-import { extractJiraTicket, formatUpdatedAt, isDraftMr } from '../utils/mrUtils'
+import { extractJiraTicket, isDraftMr } from '../utils/mrUtils'
+import { UpdatedDate } from './UpdatedDate'
 
 export interface MRWithProject extends MR { projectPath: string }
 interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
@@ -64,7 +65,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                 <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
                 <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
                 <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-                <td className="gb-td gb-td-small">{formatUpdatedAt(mr.updated_at)}</td>
+                <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
               </tr>
             )
           })}
@@ -115,7 +116,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
               <td className="gb-group-cell" colSpan={6}>
                 <div className="gb-group-header">
                   <span className="gb-group-title">{group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})`}</span>
-                  <span className="gb-group-latest" title="Latest updated MR in this group">{formatUpdatedAt(new Date(group.latestTs).toISOString())}</span>
+                  <span className="gb-group-latest" title="Latest updated MR in this group"><UpdatedDate iso={new Date(group.latestTs).toISOString()} /></span>
                 </div>
               </td>
             </tr>
@@ -149,7 +150,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                   <td className="gb-td">{mr.author && <UserAvatar user={mr.author} />}</td>
                   <td className="gb-td gb-td-small">{approvalsUsers.length ? <span title={`Approvals (${approvalsUsers.length})`} className="gb-avatar-stack">{approvalsUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
                   <td className="gb-td gb-td-small">{reviewersUsers.length ? <span title={`Reviewers (${reviewersUsers.length})`} className="gb-avatar-stack">{reviewersUsers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '–'}</td>
-                  <td className="gb-td gb-td-small">{formatUpdatedAt(mr.updated_at)}</td>
+                  <td className="gb-td gb-td-small"><UpdatedDate iso={mr.updated_at} /></td>
                 </tr>
               )
             })}

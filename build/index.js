@@ -486,10 +486,63 @@
     const match = title.toUpperCase().match(/([A-Z][A-Z0-9]+-\d+)/);
     return match ? match[1] : null;
   };
-  var formatUpdatedAt = (iso) => {
+
+  // src/components/UpdatedDate.tsx
+  var computeRelative = (iso) => {
+    const target = new Date(iso);
+    if (isNaN(target.getTime())) return "Invalid date";
+    const now = /* @__PURE__ */ new Date();
+    let diffMs = target.getTime() - now.getTime();
+    const past = diffMs < 0;
+    diffMs = Math.abs(diffMs);
+    const sec = Math.floor(diffMs / 1e3);
+    const min = Math.floor(sec / 60);
+    const hr = Math.floor(min / 60);
+    const day = Math.floor(hr / 24);
+    const month = Math.floor(day / 30);
+    const year = Math.floor(day / 365);
+    const fmt = (val, unit) => `${val} ${unit}${val > 1 ? "s" : ""}`;
+    let phrase;
+    if (sec < 45) phrase = "just now";
+    else if (min < 2) phrase = "1 minute ago";
+    else if (min < 60) phrase = `${fmt(min, "minute")} ago`;
+    else if (hr < 2) phrase = "1 hour ago";
+    else if (hr < 24) phrase = `${fmt(hr, "hour")} ago`;
+    else if (day < 2) phrase = "1 day ago";
+    else if (day < 30) phrase = `${fmt(day, "day")} ago`;
+    else if (month < 2) phrase = "1 month ago";
+    else if (month < 12) phrase = `${fmt(month, "month")} ago`;
+    else if (year < 2) phrase = "1 year ago";
+    else phrase = `${fmt(year, "year")} ago`;
+    if (!past) {
+      if (sec < 45) return "in a moment";
+      if (min < 2) return "in 1 minute";
+      if (min < 60) return `in ${fmt(min, "minute")}`;
+      if (hr < 2) return "in 1 hour";
+      if (hr < 24) return `in ${fmt(hr, "hour")}`;
+      if (day < 2) return "in 1 day";
+      if (day < 30) return `in ${fmt(day, "day")}`;
+      if (month < 2) return "in 1 month";
+      if (month < 12) return `in ${fmt(month, "month")}`;
+      if (year < 2) return "in 1 year";
+      return `in ${fmt(year, "year")}`;
+    }
+    return phrase;
+  };
+  var formatFrenchDate = (iso) => {
     const d3 = new Date(iso);
+    if (isNaN(d3.getTime())) return "-";
     const pad = (n2) => String(n2).padStart(2, "0");
-    return `${d3.getFullYear()}-${pad(d3.getMonth() + 1)}-${pad(d3.getDate())} ${pad(d3.getHours())}:${pad(d3.getMinutes())}`;
+    return `${pad(d3.getDate())}/${pad(d3.getMonth() + 1)}/${d3.getFullYear()} ${pad(d3.getHours())}:${pad(d3.getMinutes())}`;
+  };
+  var UpdatedDate = ({ iso }) => {
+    const [relative, setRelative] = d2(() => computeRelative(iso));
+    y2(() => {
+      const id = setInterval(() => setRelative(computeRelative(iso)), 6e4);
+      return () => clearInterval(id);
+    }, [iso]);
+    const display = formatFrenchDate(iso);
+    return /* @__PURE__ */ u3("time", { dateTime: iso, title: relative, className: "gb-date", children: display });
   };
 
   // src/components/MergeRequestsTable.tsx
@@ -548,7 +601,7 @@
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: formatUpdatedAt(mr.updated_at) })
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
         }) })
       ] });
@@ -584,7 +637,7 @@
       /* @__PURE__ */ u3("tbody", { children: groups.map((group) => /* @__PURE__ */ u3(k, { children: [
         /* @__PURE__ */ u3("tr", { className: "gb-group-row", children: /* @__PURE__ */ u3("td", { className: "gb-group-cell", colSpan: 6, children: /* @__PURE__ */ u3("div", { className: "gb-group-header", children: [
           /* @__PURE__ */ u3("span", { className: "gb-group-title", children: group.ticket ? `${group.ticket} (${group.items.length})` : `No ticket (${group.items.length})` }),
-          /* @__PURE__ */ u3("span", { className: "gb-group-latest", title: "Latest updated MR in this group", children: formatUpdatedAt(new Date(group.latestTs).toISOString()) })
+          /* @__PURE__ */ u3("span", { className: "gb-group-latest", title: "Latest updated MR in this group", children: /* @__PURE__ */ u3(UpdatedDate, { iso: new Date(group.latestTs).toISOString() }) })
         ] }) }) }, `group-${group.key}`),
         group.items.map((mr) => {
           const ticket = extractJiraTicket(mr.title);
@@ -620,7 +673,7 @@
             /* @__PURE__ */ u3("td", { className: "gb-td", children: mr.author && /* @__PURE__ */ u3(UserAvatar, { user: mr.author }) }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: approvalsUsers.length ? /* @__PURE__ */ u3("span", { title: `Approvals (${approvalsUsers.length})`, className: "gb-avatar-stack", children: approvalsUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
             /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: reviewersUsers.length ? /* @__PURE__ */ u3("span", { title: `Reviewers (${reviewersUsers.length})`, className: "gb-avatar-stack", children: reviewersUsers.map((u4, i4) => /* @__PURE__ */ u3(UserAvatar, { user: u4, overlap: i4 > 0 })) }) : "\u2013" }),
-            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: formatUpdatedAt(mr.updated_at) })
+            /* @__PURE__ */ u3("td", { className: "gb-td gb-td-small", children: /* @__PURE__ */ u3(UpdatedDate, { iso: mr.updated_at }) })
           ] }, mr.id);
         })
       ] })) })
@@ -843,6 +896,10 @@ body.theme-dark .gb-group-row .gb-group-cell { background:#2d3640; color:#f1f3f5
 .gb-group-latest { font-size:11px; opacity:.75; font-family:monospace; }
 @media (prefers-color-scheme: dark) { .gb-group-latest { opacity:.85; } }
 body[data-theme='dark'] .gb-group-latest, body.theme-dark .gb-group-latest { opacity:.85; }
+.gb-date { font-size:11px; font-family:monospace; white-space:nowrap; cursor:help; }
+.gb-date:hover { text-decoration:underline; }
+@media (prefers-color-scheme: dark) { .gb-date { color:#d1d5da; } }
+body[data-theme='dark'] .gb-date, body.theme-dark .gb-date { color:#d1d5da; }
 `;
 
   // src/hooks/usePageTitle.ts
