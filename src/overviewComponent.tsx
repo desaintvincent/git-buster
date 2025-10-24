@@ -5,6 +5,7 @@ import { Options, ProjectGroup, TeamRequirement } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistantFilter } from './components/NonPersistantFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
+import { SkeletonLoader } from './components/SkeletonLoader'
 import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
 import { useReviewMeta } from './hooks/useReviewMeta'
 import { isHotfixMr, isDraftMr } from './utils/mrUtils'
@@ -241,11 +242,54 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     <div className="gb-container">
       <div className="gb-header-row">
         <h1>Git Buster Overview</h1>
-        <label className="gb-group-select-label">
-          <select className="gb-group-select" value={projectGroup} onChange={e => setProjectGroup((e.target as HTMLSelectElement).value)}>
-            {groups.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
-          </select>
-        </label>
+        <div className="gb-header-right">
+          {(loading || (reviewMetaLoading && !!authorFiltered.length) || error) && (
+            <div className="gb-header-status">
+              {loading && (
+                <>
+                  <div className="gb-header-spinner">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.3" fill="none"/>
+                      <path d="M 8 2 A 6 6 0 0 1 14 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                        <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="1s" repeatCount="indefinite"/>
+                      </path>
+                    </svg>
+                  </div>
+                  <span className="gb-header-status-text">Loading merge requests…</span>
+                </>
+              )}
+              {!loading && reviewMetaLoading && !!authorFiltered.length && (
+                <>
+                  <div className="gb-header-spinner">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-opacity="0.3" fill="none"/>
+                      <path d="M 8 2 A 6 6 0 0 1 14 8" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                        <animateTransform attributeName="transform" type="rotate" from="0 8 8" to="360 8 8" dur="1s" repeatCount="indefinite"/>
+                      </path>
+                    </svg>
+                  </div>
+                  <span className="gb-header-status-text">Loading approvals & reviewers…</span>
+                </>
+              )}
+              {!loading && error && (
+                <>
+                  <div className="gb-header-error-icon">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="8" cy="8" r="7" fill="currentColor"/>
+                      <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                  </div>
+                  <span className="gb-header-status-text gb-header-error-text">Error loading data</span>
+                </>
+              )}
+            </div>
+          )}
+          <label className="gb-group-select-label">
+            <select className="gb-group-select" value={projectGroup} onChange={e => setProjectGroup((e.target as HTMLSelectElement).value)}>
+              {groups.map(g => <option key={g.name} value={g.name}>{g.name}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} approvalReadyFilter={approvalReadyFilter} setApprovalReadyFilter={setApprovalReadyFilter} reviewerReadyFilter={reviewerReadyFilter} setReviewerReadyFilter={setReviewerReadyFilter} />
       <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
@@ -258,11 +302,10 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         <button type="button" onClick={handleRefreshReviewMeta} disabled={reviewMetaLoading || !authorFiltered.length} className="gb-btn" title="Force refetch approvals & reviewers for visible MRs">Refresh review meta</button>
       </div>
       <div className="gb-section">
-        {loading && <div className="gb-sub">Loading merge requests…</div>}
+        {loading && <SkeletonLoader />}
         {error && !loading && <div className="gb-error">Failed to load: {error}</div>}
-        {!loading && !error && !authorFiltered.length && <div className="gb-sub">No opened merge requests found.</div>}
+        {!loading && !error && !authorFiltered.length && <div className="gb-sub">No open merge requests found.</div>}
         {!!authorFiltered.length && <MergeRequestsTable mrs={authorFiltered as any} filter={filter} setFilter={setFilter} approvalsUsersByMr={approvalsUsersByMr} reviewersUsersByMr={reviewersUsersByMr} approvalsStatusByMr={approvalsStatusByMr} reviewersStatusByMr={reviewersStatusByMr} groupByTicket={groupByTicket} sortDirection={sortDirection} setSortDirection={setSortDirection} />}
-        {reviewMetaLoading && !!authorFiltered.length && <div className="gb-helper">Loading approvals & reviewers…</div>}
       </div>
     </div>
   )
