@@ -5,15 +5,50 @@ import { UserAvatar } from '../UserAvatar'
 import { extractJiraTicket, isDraftMr } from '../utils/mrUtils'
 import { UpdatedDate } from './UpdatedDate'
 
+const PipelineSuccessIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+)
+
+const PipelineFailedIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <path d="M6 6l4 4M10 6l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+)
+
+const PipelineRunningIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <circle cx="8" cy="8" r="3" fill="currentColor"/>
+  </svg>
+)
+
+const CheckCircleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7" fill="currentColor"/>
+    <path d="M11.5 5.5L7 10.5L4.5 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+)
+
+const CrossCircleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="8" cy="8" r="7" fill="currentColor"/>
+    <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  </svg>
+)
+
 export interface MRWithProject extends MR { projectPath: string }
 interface Props { mrs: MRWithProject[]; filter: string; setFilter: (v:string)=>void; approvalsUsersByMr: Record<number, User[]>; reviewersUsersByMr: Record<number, User[]>; approvalsStatusByMr: Record<number,{ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}>; reviewersStatusByMr: Record<number,{ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}>; groupByTicket: boolean; sortDirection: 'asc'|'desc'; setSortDirection: (d:'asc'|'desc')=>void }
 
 const pipelineCell = (mr: MRWithProject) => {
   const status = mr.head_pipeline?.status
   if (!status) return '–'
-  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded">✓</span>
-  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed">✗</span>
-  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}>•</span>
+  if (status === 'success') return <span className="gb-pipeline-status success" title="Pipeline succeeded"><PipelineSuccessIcon /></span>
+  if (status === 'failed') return <span className="gb-pipeline-status failed" title="Pipeline failed"><PipelineFailedIcon /></span>
+  return <span className="gb-pipeline-status other" title={`Pipeline status: ${status}`}><PipelineRunningIcon /></span>
 }
 
 const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string;teamCounts:Array<{team:string;have:number;need:number}>}|undefined) => {
@@ -23,7 +58,7 @@ const reviewersCell = (reviewers: User[], status: {ready:boolean;details:string;
     <div className="gb-right">
       <span className="gb-inline-cell right">
         {reviewers.length ? <span title={`Reviewers (${reviewers.length})`} className="gb-avatar-stack">{reviewers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All reviewer team requirements met` : `Some reviewer team requirements missing`}>{status.ready ? '✓':'✗'}</span>}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All reviewer team requirements met` : `Some reviewer team requirements missing`}>{status.ready ? <CheckCircleIcon />:<CrossCircleIcon />}</span>}
         {!!missingEntries.length && <span className="gb-miss-agg" title={tooltip}>!{missingEntries.length}</span>}
       </span>
     </div>
@@ -37,7 +72,7 @@ const approversCell = (approvers: User[], status: {ready:boolean;details:string;
     <div className="gb-right">
       <span className="gb-inline-cell right">
         {approvers.length ? <span title={`Approvers (${approvers.length})`} className="gb-avatar-stack">{approvers.map((u,i)=><UserAvatar user={u} overlap={i>0} />)}</span> : '\u2013'}
-        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All approval team requirements met` : `Some approval team requirements missing`}>{status.ready ? '✓':'✗'}</span>}
+        {status && <span className={`gb-req-status ${status.ready ? 'ready':'not-ready'}`} title={status.ready ? `All approval team requirements met` : `Some approval team requirements missing`}>{status.ready ? <CheckCircleIcon />:<CrossCircleIcon />}</span>}
         {!!missingEntries.length && <span className="gb-miss-agg" title={tooltip}>!{missingEntries.length}</span>}
       </span>
     </div>
@@ -95,7 +130,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                     </div>
                     <div className="gb-mr-meta-line">
                       <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                      <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
+                      <span className="gb-mr-branches">{mr.source_branch} {'\u2192'} {mr.target_branch}</span>
                     </div>
                   </div>
                 </td>
@@ -179,7 +214,7 @@ export const MergeRequestsTable = ({ mrs, filter, setFilter, approvalsUsersByMr,
                       </div>
                       <div className="gb-mr-meta-line">
                         <button type="button" onClick={addTicket} disabled={disabled} title={disabled ? 'No JIRA-like ticket (ABC-123) found in title' : `Add ${ticket} to title filter`} className="gb-magnify-btn">🔍</button>
-                        <span className="gb-mr-branches">{mr.source_branch} \u2192 {mr.target_branch}</span>
+                        <span className="gb-mr-branches">{mr.source_branch} {'\u2192'} {mr.target_branch}</span>
                       </div>
                     </div>
                   </td>

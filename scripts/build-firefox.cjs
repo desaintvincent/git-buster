@@ -48,8 +48,6 @@ filesToCopy.forEach(file => {
   }
 });
 
-// Create ZIP file
-// Create new zip
 process.chdir(firefoxDir);
 execSync(`zip -r "../${zipName}" .`);
 
