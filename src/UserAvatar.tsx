@@ -1,3 +1,5 @@
+/// <reference path="./jsx.d.ts" />
+import { h } from 'preact'
 import type { User } from './types'
 
 // Small avatar chip showing the user's avatar; on hover (title) shows username + full name.

@@ -1,0 +1,17 @@
+{
+    "manifest_version": 2,
+    "name": "Git buster TEST",
+    "description": "Test version",
+    "version": "0.0.1",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "content_scripts": [{
+        "js": ["test-content.js"],
+        "matches": ["http://*/*", "https://*/*"],
+        "run_at": "document_end"
+    }]
+}

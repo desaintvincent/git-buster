@@ -11,10 +11,22 @@ const notif = (str) => {
 }
 
 const loadOptions = async () => {
-    const options = await chrome.storage.sync.get([EXTENSION_NAME])
+    // Cross-browser API detection
+    const browserAPI = (typeof browser !== 'undefined' && browser.storage) ? browser : 
+                      (typeof chrome !== 'undefined' && chrome.storage) ? chrome : null;
+    
+    if (!browserAPI?.storage?.sync) {
+        console.warn('[git-buster] No storage API available');
+        return {};
+    }
 
-    return options[EXTENSION_NAME] ?? {}
-
+    try {
+        const options = await browserAPI.storage.sync.get([EXTENSION_NAME]);
+        return options[EXTENSION_NAME] ?? {};
+    } catch (error) {
+        console.error('[git-buster] Failed to load options:', error);
+        return {};
+    }
 }
 
 const AllOptions = ['enable', 'baseUrl', 'username', 'projects', 'teamRequirements']
@@ -36,9 +48,23 @@ const saveOptions = async () => {
         }
     }, {})
 
-    await chrome.storage.sync.set({ [EXTENSION_NAME]: options }).then(() => {
-        notif('saved')
-    });
+    // Cross-browser API detection
+    const browserAPI = (typeof browser !== 'undefined' && browser.storage) ? browser : 
+                      (typeof chrome !== 'undefined' && chrome.storage) ? chrome : null;
+    
+    if (!browserAPI?.storage?.sync) {
+        console.error('[git-buster] No storage API available');
+        notif('Error: Storage not available');
+        return;
+    }
+
+    try {
+        await browserAPI.storage.sync.set({ [EXTENSION_NAME]: options });
+        notif('saved');
+    } catch (error) {
+        console.error('[git-buster] Failed to save options:', error);
+        notif('Error saving options');
+    }
 }
 
 const applyOptions = options => {
@@ -62,7 +88,13 @@ const listenElems = () => {
 
 document.querySelector("#button-reload").onclick = (e) => {
     e.preventDefault()
-    chrome.runtime.reload();
+    // Cross-browser API detection
+    const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : 
+                      (typeof chrome !== 'undefined' && chrome.runtime) ? chrome : null;
+    
+    if (browserAPI?.runtime?.reload) {
+        browserAPI.runtime.reload();
+    }
     location.reload();
 };
 

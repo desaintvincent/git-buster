@@ -1,0 +1,36 @@
+{
+    "manifest_version": 2,
+    "name": "Git buster",
+    "description": "More infos on gitlab mr list",
+    "version": "0.0.1",
+    "icons": {
+        "16": "logo/logo-16.png",
+        "48": "logo/logo-48.png",
+        "128": "logo/logo-128.png"
+    },
+    "applications": {
+        "gecko": {
+            "id": "git-buster@viaco.fr",
+            "strict_min_version": "57.0"
+        }
+    },
+    "options_ui": {
+        "page": "settings/settings.html",
+        "open_in_tab": true
+    },
+    "browser_action": {
+        "default_title": "Git buster",
+        "default_popup": "popup/popup.html"
+    },
+    "permissions": [
+        "storage",
+        "activeTab",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "content_scripts": [{
+        "js": ["build/index.js"],
+        "matches": ["http://*/*", "https://*/*"],
+        "run_at": "document_end"
+    }]
+}

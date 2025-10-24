@@ -1,3 +1,4 @@
+import { h, Fragment } from 'preact'
 import { NonPersistentProjectFilter } from './NonPersistentProjectFilter'
 import { NonPersistentAuthorFilter } from './NonPersistentAuthorFilter'
 import { NonPersistentReviewerFilter } from './NonPersistentReviewerFilter'

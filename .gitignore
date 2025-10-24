@@ -13,6 +13,10 @@ build
 dist-ssr
 *.local
 
+# Build artifacts and releases
+releases/
+*.zip
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

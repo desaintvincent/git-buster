@@ -4,6 +4,10 @@
 export type ProjectGroup = { name: string; projects: string[] }
 
 export type TeamRequirement = { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }
+// Cross-browser API declarations
+declare global {
+    var browser: typeof chrome | undefined;
+}
 
 export type Options = {
     enable?: boolean;
@@ -11,6 +15,8 @@ export type Options = {
     baseUrl?: string;
     projects?: ProjectGroup[]; // Full PROJECTS variable attached to plugin options
     teamRequirements?: TeamRequirement[]; // custom approval/reviewer team requirements
+    facultativeApprovers?: string[]; // Optional approvers that don't count towards required approvals
+    requiredApprovals?: number; // Number of required approvals
 }
 
 export type User = {
