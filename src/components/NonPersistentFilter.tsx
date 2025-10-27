@@ -30,7 +30,7 @@ interface Props {
 }
 
 // Wrapper that groups the non-persistent project, author, reviewer & approver filters
-export const NonPersistantFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading, invertAuthor, setInvertAuthor }: Props) => (
+export const NonPersistentFilter = ({ projects, selectedProject, setSelectedProject, authors, selectedAuthor, setSelectedAuthor, reviewerUsers, selectedReviewer, setSelectedReviewer, invertReviewer, setInvertReviewer, approverUsers, selectedApprover, setSelectedApprover, invertApprover, setInvertApprover, username, disabled, reviewMetaLoading, invertAuthor, setInvertAuthor }: Props) => (
   <div className="gb-filter-bar">
     <NonPersistentProjectFilter projects={projects} selectedProject={selectedProject} setSelectedProject={setSelectedProject} />
     <NonPersistentAuthorFilter authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} disabled={!!disabled} username={username} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />

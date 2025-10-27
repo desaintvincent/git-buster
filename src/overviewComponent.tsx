@@ -3,7 +3,7 @@ import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { Options, ProjectGroup, TeamRequirement } from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
-import { NonPersistantFilter } from './components/NonPersistantFilter'
+import { NonPersistentFilter } from './components/NonPersistentFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
 import { SkeletonLoader } from './components/SkeletonLoader'
 import { useProjectMergeRequests } from './hooks/useProjectMergeRequests'
@@ -292,7 +292,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
         </div>
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} approvalReadyFilter={approvalReadyFilter} setApprovalReadyFilter={setApprovalReadyFilter} reviewerReadyFilter={reviewerReadyFilter} setReviewerReadyFilter={setReviewerReadyFilter} />
-      <NonPersistantFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
+      <NonPersistentFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
       {!!teamReqs.length && <div className="gb-filter-bar" style={{ marginTop:'8px' }}>
         <NonPersistentTeamReqFilter teams={teamReqs.map(t=>t.name)} selectedApprovalTeam={selectedApprovalTeam} setSelectedApprovalTeam={setSelectedApprovalTeam} approvalTeamMode={approvalTeamMode} setApprovalTeamMode={setApprovalTeamMode} selectedReviewerTeam={selectedReviewerTeam} setSelectedReviewerTeam={setSelectedReviewerTeam} reviewerTeamMode={reviewerTeamMode} setReviewerTeamMode={setReviewerTeamMode} approvalsMissingMode={approvalsMissingMode} setApprovalsMissingMode={setApprovalsMissingMode} reviewersMissingMode={reviewersMissingMode} setReviewersMissingMode={setReviewersMissingMode} disabled={reviewMetaLoading} />
       </div>}
