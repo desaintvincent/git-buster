@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useState, useRef } from 'preact/hooks'
 import type { MR, Approval, User } from '../types'
 
 const REVIEW_META_BATCH_SIZE = 5
@@ -37,10 +37,17 @@ export const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshTok
   const [approvalsUsersByMr, setApprovalsUsersByMr] = useState<Record<number, User[]>>({})
   const [reviewersUsersByMr, setReviewersUsersByMr] = useState<Record<number, User[]>>({})
   const [loading, setLoading] = useState<boolean>(false)
+  const prevRefreshToken = useRef(refreshToken)
 
   useEffect(() => {
     let cancelled = false
     if (!baseUrl || !mrs.length) { setApprovalsUsersByMr({}); setReviewersUsersByMr({}); setLoading(false); return }
+    
+    if (prevRefreshToken.current !== refreshToken) {
+      mrs.forEach(mr => delete reviewMetaCache[mr.id])
+      prevRefreshToken.current = refreshToken
+    }
+    
     const toFetch = mrs.filter(mr => !reviewMetaCache[mr.id] || reviewMetaCache[mr.id].updated_at !== mr.updated_at)
     const populateFromCache = () => {
       const approvals: Record<number, User[]> = {}

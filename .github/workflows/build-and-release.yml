@@ -1,0 +1,65 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'yarn'
+        
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      
+    - name: Build extensions
+      run: yarn build:all
+      
+    - name: Upload Chrome extension
+      uses: actions/upload-artifact@v4
+      with:
+        name: git-buster-chrome
+        path: releases/git-buster-chrome.zip
+        
+    - name: Upload Firefox extension
+      uses: actions/upload-artifact@v4
+      with:
+        name: git-buster-firefox
+        path: releases/git-buster-firefox.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Download Chrome extension
+      uses: actions/download-artifact@v4
+      with:
+        name: git-buster-chrome
+        
+    - name: Download Firefox extension
+      uses: actions/download-artifact@v4
+      with:
+        name: git-buster-firefox
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          git-buster-chrome.zip
+          git-buster-firefox.zip
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
