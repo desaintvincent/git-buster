@@ -41,11 +41,11 @@ Clicking the button toggles a synthetic overview page that replaces the main con
   - Approvers: All | Ready | Not ready
   - Reviewers: All | Ready | Not ready
   Selecting Ready shows only MRs meeting all team counts; Not ready shows those missing at least one required approval/reviewer count.
-- Team requirement filters (ephemeral, shown only if teamRequirements configured):
-  - Approvals missing: All | Has missing | None missing (presence of any team below required approvals)
-  - Reviewers missing: All | Has missing | None missing (presence of any team below required reviewers)
-  - Team approvals: mode (All/Missing/Ready) + team selector (filters a specific team's approvals count readiness)
-  - Team reviewers: mode (All/Missing/Ready) + team selector (filters a specific team's reviewers count readiness)
+- Team requirement filters (ephemeral, shown only if any project has requirements):
+  - Approvals missing: All | Has missing | None missing (presence of any team below required approvals across visible MRs)
+  - Reviewers missing: All | Has missing | None missing (presence of any team below required reviewers across visible MRs)
+  - Team approvals: mode (All/Missing/Ready) + team selector (filters a specific team's approvals readiness)
+  - Team reviewers: mode (All/Missing/Ready) + team selector (filters a specific team's reviewers readiness)
 - Ephemeral filters: project, author, reviewer, approver (with invert toggles) that are not stored across reloads.
 - Per-MR magnifying glass button: if the MR title contains a JIRA-like ticket (e.g. ABC-123), clicking adds it to the title filter without duplication; disabled if no ticket pattern is found.
 - Per-MR columns include Approvals and Reviewers. Each shows avatars (if any) and a ✓/✗ readiness badge. When teams are missing counts, red team badges now appear on their own line beneath the avatars/status (not inline) and the entire cell content is right-aligned for compact stacking.
@@ -71,9 +71,9 @@ Configuration reminders (managed in the extension Settings page):
 - `enable`: master switch
 - `baseUrl`: your GitLab base (e.g. https://gitlab.example.com)
 - `username`: used to decide which MRs are yours
-- `projects`: JSON array of { name, projects:string[] }
-- `teamRequirements`: JSON array of { name, members:string[]; approvalsRequired:number; reviewersRequired?:number }
-- `requiredApprovals`: number of approvals required globally (optional)
+- `projects`: JSON array of groups: { name: string; projects: string[]; requirements?: [{ team: string; approvalsRequired: number; reviewersRequired?: number }] }
+- `teams`: JSON array of { name: string; members: string[] } defining membership used by project requirements
+- `requiredApprovals`: legacy global number of approvals (optional; prefer per-project requirements)
 - `facultativeApprovers`: comma separated usernames that do not count toward required approvals
 
 Open the Settings page via the browser's extension details or the popup "Open Settings" button. Changes save automatically.

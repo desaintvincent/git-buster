@@ -37,8 +37,9 @@
         <input type="text" id="username" name="username" />
     </div>
     <div class="input-container">
-        <label for="requiredApprovals">Required approvals (number)</label>
+        <label for="requiredApprovals">Legacy global required approvals (optional)</label>
         <input type="number" id="requiredApprovals" name="requiredApprovals" min="0" />
+        <div class="hint">Use per-project requirements instead when possible.</div>
     </div>
     <div class="input-container">
         <label for="facultativeApprovers">Facultative approvers (comma separated)</label>
@@ -46,14 +47,14 @@
         <div class="hint">Optional approvers that do not count towards required approvals.</div>
     </div>
     <div class="input-container column">
-        <label for="projects">Projects JSON</label>
-        <textarea id="projects" name="projects" rows="8" placeholder='[{"name": "Group", "projects": ["proj-a", "proj-b"]}]'></textarea>
+        <label for="projects">Projects JSON (groups with shared requirements)</label>
+        <textarea id="projects" name="projects" rows="10" placeholder='[{"name":"Group A","projects":["namespace/proj1","namespace/proj2"],"requirements":[{"team":"Core Team","approvalsRequired":1,"reviewersRequired":1}]}]'></textarea>
         <div id="projects-hint" class="hint"></div>
     </div>
     <div class="input-container column">
-        <label for="teamRequirements">teamRequirements JSON</label>
-        <textarea id="teamRequirements" name="teamRequirements" rows="8" placeholder='[{"name":"Team A","members":["alice"],"approvalsRequired":1,"reviewersRequired":1}]'></textarea>
-        <div id="teamRequirements-hint" class="hint"></div>
+        <label for="teams">Teams JSON (membership only)</label>
+        <textarea id="teams" name="teams" rows="8" placeholder='[{"name":"Core Team","members":["alice","bob"]}]'></textarea>
+        <div id="teams-hint" class="hint"></div>
     </div>
   </div>
   <div class="actions">

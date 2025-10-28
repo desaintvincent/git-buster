@@ -31,7 +31,7 @@ const AllOptions = [
   'baseUrl',
   'username',
   'projects',
-  'teamRequirements',
+  'teams',
   'facultativeApprovers',
   'requiredApprovals'
 ]
@@ -95,11 +95,12 @@ const listenElems = () => {
 
 const formatHint = () => {
   const el = document.getElementById('projects-hint');
-  if (!el) return;
-  el.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example projects JSON:\n[\n  {\n    \"name\": \"Core\",\n    \"projects\": [\"frontend\", \"backend\"]\n  },\n  {\n    \"name\": \"Misc\",\n    \"projects\": [\"sandbox\"]\n  }\n]</pre>`;
-  const teamsEl = document.getElementById('teamRequirements-hint');
+  if (el) {
+    el.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example projects JSON:\n[\n  {\n    \"name\": \"Core\",\n    \"projects\": [\"group/frontend\", \"group/backend\"],\n    \"requirements\": [ { \"team\": \"Core Team\", \"approvalsRequired\": 1, \"reviewersRequired\": 1 } ]\n  }\n]</pre>`;
+  }
+  const teamsEl = document.getElementById('teams-hint');
   if (teamsEl) {
-    teamsEl.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example teamRequirements JSON:\n[\n  {\n    \"name\": \"Core Team\",\n    \"members\": [\"alice\", \"bob\"],\n    \"approvalsRequired\": 1,\n    \"reviewersRequired\": 1\n  }\n]</pre>`;
+    teamsEl.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example teams JSON:\n[\n  {\n    \"name\": \"Core Team\",\n    \"members\": [\"alice\", \"bob\"]\n  }\n]</pre>`;
   }
 }
 
@@ -120,4 +121,3 @@ const init = async () => {
 }
 
 init();
-

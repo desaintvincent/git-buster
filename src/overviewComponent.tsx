@@ -1,7 +1,7 @@
 import { h, Fragment } from 'preact'
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { Options, ProjectGroup, TeamRequirement } from './types'
+import {Options, ProjectGroup, ProjectRequirement} from './types'
 import { PersistentFilterBar } from './components/PersistentFilterBar'
 import { NonPersistentFilter } from './components/NonPersistentFilter'
 import { MergeRequestsTable } from './components/MergeRequestsTable'
@@ -141,11 +141,17 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     const has = approvers.some(u => u.username === selectedApprover)
     return invertApprover ? !has : has
   }) : reviewerFiltered
-  // After we have approval/reviewer maps compute team requirement statuses
-  const teamReqs: TeamRequirement[] = (options.teamRequirements || []).map(t => ({ ...t, members: t.members.map(m => m.trim().toLowerCase()).filter(Boolean) }))
+  // Build mapping of project path -> group requirements
+  const groupByProject: Record<string, ProjectRequirement[] | undefined> = {} as Record<string, ProjectRequirement[] | undefined>
+  (options.projects || []).forEach(g => {
+    g.projects.forEach(p => { groupByProject[p] = g.requirements })
+  })
+  const distinctTeamNames = Array.from(new Set((options.projects || []).flatMap(g => (g.requirements||[]).map(r => r.team)))).filter(Boolean)
+  const teamMembersMap: Record<string, string[]> = (options.teams || []).reduce((acc, t) => { acc[t.name] = t.members.map(m => m.trim().toLowerCase()).filter(Boolean); return acc }, {} as Record<string,string[]>)
   const approvalsStatusByMr: Record<number, { ready: boolean; details: string; teamCounts: Array<{ team: string; have: number; need: number }> }> = {}
   const reviewersStatusByMr: Record<number, { ready: boolean; details: string; teamCounts: Array<{ team: string; have: number; need: number }> }> = {}
   for (const mr of projectFiltered) {
+    const reqs = groupByProject[mr.projectPath] || []
     const approvalsUsers = approvalsUsersByMr[mr.id] || []
     const reviewersUsers = reviewersUsersByMr[mr.id] || []
     const approvalsUsernames = approvalsUsers.map(u => u.username.toLowerCase())
@@ -156,21 +162,20 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
     const reviewersParts: string[] = []
     const approvalsCounts: Array<{ team: string; have: number; need: number }> = []
     const reviewersCounts: Array<{ team: string; have: number; need: number }> = []
-    for (const team of teamReqs) {
-      const aCount = team.members.reduce((acc,m) => acc + (approvalsUsernames.includes(m) ? 1 : 0), 0)
-      const aReq = team.approvalsRequired
-      approvalsCounts.push({ team: team.name, have: aCount, need: aReq })
-      approvalsParts.push(`${team.name}: ${aCount}/${aReq}`)
-      if (aCount < aReq) approvalsReadyAll = false
-      const rReq = team.reviewersRequired ?? 0
-      if (rReq > 0) {
-        const rCount = team.members.reduce((acc,m) => acc + (reviewersUsernames.includes(m) ? 1 : 0), 0)
-        reviewersCounts.push({ team: team.name, have: rCount, need: rReq })
-        reviewersParts.push(`${team.name}: ${rCount}/${rReq}`)
-        if (rCount < rReq) reviewersReadyAll = false
+    for (const req of reqs) {
+      const members = teamMembersMap[req.team] || []
+      const aCount = members.reduce((acc,m) => acc + (approvalsUsernames.includes(m) ? 1 : 0), 0)
+      approvalsCounts.push({ team: req.team, have: aCount, need: req.approvalsRequired })
+      approvalsParts.push(`${req.team}: ${aCount}/${req.approvalsRequired}`)
+      if (aCount < req.approvalsRequired) approvalsReadyAll = false
+      if (req.reviewersRequired != null && req.reviewersRequired > 0) {
+        const rCount = members.reduce((acc,m) => acc + (reviewersUsernames.includes(m) ? 1 : 0), 0)
+        reviewersCounts.push({ team: req.team, have: rCount, need: req.reviewersRequired })
+        reviewersParts.push(`${req.team}: ${rCount}/${req.reviewersRequired}`)
+        if (rCount < req.reviewersRequired) reviewersReadyAll = false
       }
     }
-    approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No team requirements', teamCounts: approvalsCounts }
+    approvalsStatusByMr[mr.id] = { ready: approvalsReadyAll, details: approvalsParts.join(' | ') || 'No group requirements', teamCounts: approvalsCounts }
     reviewersStatusByMr[mr.id] = { ready: reviewersReadyAll, details: reviewersParts.join(' | ') || 'No reviewer requirements', teamCounts: reviewersCounts }
   }
   const applyReadyFilter = (list: typeof approverFiltered, statusMap: Record<number,{ready:boolean}>, mode: 'all'|'ready'|'not_ready') => {
@@ -293,8 +298,8 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
       </div>
       <PersistentFilterBar hideDrafts={hideDrafts} setHideDrafts={setHideDrafts} onlyHotfixes={onlyHotfixes} setOnlyHotfixes={setOnlyHotfixes} groupByTicket={groupByTicket} setGroupByTicket={setGroupByTicket} pipelineStatus={pipelineStatus} setPipelineStatus={setPipelineStatus} approvalReadyFilter={approvalReadyFilter} setApprovalReadyFilter={setApprovalReadyFilter} reviewerReadyFilter={reviewerReadyFilter} setReviewerReadyFilter={setReviewerReadyFilter} />
       <NonPersistentFilter projects={projectNames} selectedProject={selectedProject} setSelectedProject={setSelectedProject} authors={authors} selectedAuthor={selectedAuthor} setSelectedAuthor={setSelectedAuthor} reviewerUsers={reviewerUsers} selectedReviewer={selectedReviewer} setSelectedReviewer={setSelectedReviewer} invertReviewer={invertReviewer} setInvertReviewer={setInvertReviewer} approverUsers={approverUsers} selectedApprover={selectedApprover} setSelectedApprover={setSelectedApprover} invertApprover={invertApprover} setInvertApprover={setInvertApprover} username={options.username} disabled={false} reviewMetaLoading={reviewMetaLoading} invertAuthor={invertAuthor} setInvertAuthor={setInvertAuthor} />
-      {!!teamReqs.length && <div className="gb-filter-bar" style={{ marginTop:'8px' }}>
-        <NonPersistentTeamReqFilter teams={teamReqs.map(t=>t.name)} selectedApprovalTeam={selectedApprovalTeam} setSelectedApprovalTeam={setSelectedApprovalTeam} approvalTeamMode={approvalTeamMode} setApprovalTeamMode={setApprovalTeamMode} selectedReviewerTeam={selectedReviewerTeam} setSelectedReviewerTeam={setSelectedReviewerTeam} reviewerTeamMode={reviewerTeamMode} setReviewerTeamMode={setReviewerTeamMode} approvalsMissingMode={approvalsMissingMode} setApprovalsMissingMode={setApprovalsMissingMode} reviewersMissingMode={reviewersMissingMode} setReviewersMissingMode={setReviewersMissingMode} disabled={reviewMetaLoading} />
+      {!!distinctTeamNames.length && <div className="gb-filter-bar" style={{ marginTop:'8px' }}>
+        <NonPersistentTeamReqFilter teams={distinctTeamNames} selectedApprovalTeam={selectedApprovalTeam} setSelectedApprovalTeam={setSelectedApprovalTeam} approvalTeamMode={approvalTeamMode} setApprovalTeamMode={setApprovalTeamMode} selectedReviewerTeam={selectedReviewerTeam} setSelectedReviewerTeam={setSelectedReviewerTeam} reviewerTeamMode={reviewerTeamMode} setReviewerTeamMode={setReviewerTeamMode} approvalsMissingMode={approvalsMissingMode} setApprovalsMissingMode={setApprovalsMissingMode} reviewersMissingMode={reviewersMissingMode} setReviewersMissingMode={setReviewersMissingMode} disabled={reviewMetaLoading} />
       </div>}
       <div className="gb-filter-row">
         <input value={filter} onInput={e => setFilter((e.target as HTMLInputElement).value)} placeholder="Filter MRs by title..." className="gb-input" />

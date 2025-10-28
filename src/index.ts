@@ -1,6 +1,6 @@
 console.log('[git-buster] Content script loading...');
 
-import { Options } from './types'
+import {Options, ProjectRequirement} from './types'
 import { mountOverview } from './overviewComponent'
 
 let options: Options
@@ -15,9 +15,9 @@ let sidebarObserverStarted = false
 
 const loadOptions = async (): Promise<Options> => {
     // Cross-browser API detection
-    const browserAPI = (typeof browser !== 'undefined' && browser.storage) ? browser : 
+    const browserAPI = (typeof browser !== 'undefined' && browser.storage) ? browser :
                       (typeof chrome !== 'undefined' && chrome.storage) ? chrome : null;
-    
+
     if (!browserAPI?.storage?.sync) {
         console.warn('[git-buster] No storage API available');
         return { facultativeApprovers: [] };
@@ -25,49 +25,65 @@ const loadOptions = async (): Promise<Options> => {
 
     try {
         const options = await browserAPI.storage.sync.get([EXTENSION_NAME]);
-        const scoppedOptions = options[EXTENSION_NAME] ?? {};
+        const scoppedOptions: any = options[EXTENSION_NAME] ?? {};
 
         const parseProjects = (val: any): { parsed?: any; error?: string } => {
             if (val == null) { return { error: 'Missing projects configuration in extension options.' } }
             let raw = val
-            if (typeof raw === 'string') {
-                try { raw = JSON.parse(raw) } catch { return { error: 'projects option is not valid JSON.' } }
-            }
+            if (typeof raw === 'string') { try { raw = JSON.parse(raw) } catch { return { error: 'projects option is not valid JSON.' } } }
             if (!Array.isArray(raw)) { return { error: 'projects should be an array.' } }
-            const isValid = raw.every((g: any) => g && typeof g === 'object' && typeof g.name === 'string' && g.name.trim().length && Array.isArray(g.projects) && g.projects.every((p: any) => typeof p === 'string' && p.trim().length))
-            if (!isValid) { return { error: 'projects array items must be { name: string; projects: string[] } with non-empty strings.' } }
-            return { parsed: raw }
+            const converted: any[] = []
+            for (const g of raw) {
+                if (!g || typeof g !== 'object' || typeof g.name !== 'string' || !Array.isArray(g.projects)) { return { error: 'Each group must be { name: string; projects: [] }.' } }
+                // Accept old shape where projects items are objects with { path, requirements } and migrate
+                const projectPaths: string[] = []
+                let groupReqs: ProjectRequirement[] | undefined = Array.isArray(g.requirements) ? g.requirements : undefined
+                for (const p of g.projects) {
+                    if (typeof p === 'string') { projectPaths.push(p) }
+                    else if (p && typeof p === 'object' && typeof p.path === 'string') {
+                        projectPaths.push(p.path)
+                        if (!groupReqs && Array.isArray(p.requirements)) { groupReqs = p.requirements } // migrate first found
+                    } else { return { error: 'Project entries must be string paths or { path: string }.' } }
+                }
+                // Validate requirements if present
+                if (groupReqs) {
+                    if (!Array.isArray(groupReqs) || !groupReqs.every(r => r && typeof r.team === 'string' && typeof r.approvalsRequired === 'number' && r.approvalsRequired >= 0 && (r.reviewersRequired == null || (typeof r.reviewersRequired === 'number' && r.reviewersRequired >= 0)))) {
+                        return { error: 'Group requirements must be { team: string; approvalsRequired: number; reviewersRequired?: number }.' }
+                    }
+                }
+                converted.push({ name: g.name, projects: projectPaths, requirements: groupReqs })
+            }
+            return { parsed: converted }
         }
 
-        const parseTeamRequirements = (val: any): { parsed?: any; error?: string } => {
+        const parseTeams = (val: any): { parsed?: any; error?: string } => {
             if (val == null) { return { parsed: [] } }
             let raw = val
             if (typeof raw === 'string') {
-                try { raw = JSON.parse(raw) } catch { return { error: 'teamRequirements option is not valid JSON.' } }
+                try { raw = JSON.parse(raw) } catch { return { error: 'teams option is not valid JSON.' } }
             }
-            if (!Array.isArray(raw)) { return { error: 'teamRequirements should be an array.' } }
-            const isValid = raw.every((t: any) => t && typeof t === 'object' && typeof t.name === 'string' && Array.isArray(t.members) && t.members.every((m: any) => typeof m === 'string') && typeof t.approvalsRequired === 'number' && t.approvalsRequired >= 0 && (t.reviewersRequired == null || (typeof t.reviewersRequired === 'number' && t.reviewersRequired >= 0)))
-            if (!isValid) { return { error: 'teamRequirements items must be { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }.' } }
+            if (!Array.isArray(raw)) { return { error: 'teams should be an array.' } }
+            const isValid = raw.every((t: any) => t && typeof t === 'object' && typeof t.name === 'string' && Array.isArray(t.members) && t.members.every((m: any) => typeof m === 'string'))
+            if (!isValid) { return { error: 'teams items must be { name: string; members: string[] }.' } }
             return { parsed: raw }
         }
 
         const { parsed: projectsParsed, error: projectsError } = parseProjects(scoppedOptions.projects)
-        if (projectsError) { 
-            configError = projectsError; 
-            console.error('[git-buster] config error:', projectsError) 
+        if (projectsError) {
+            configError = projectsError;
+            console.error('[git-buster] config error:', projectsError)
         }
-        
-        const { parsed: teamsParsed, error: teamsError } = parseTeamRequirements(scoppedOptions.teamRequirements)
-        if (teamsError && !configError) { 
-            configError = teamsError; 
-            console.error('[git-buster] config error:', teamsError) 
+        const { parsed: teamsParsed, error: teamsError } = parseTeams(scoppedOptions.teams)
+        if (teamsError && !configError) {
+            configError = teamsError;
+            console.error('[git-buster] config error:', teamsError)
         }
 
         return {
             ...scoppedOptions,
             facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(',').filter(Boolean),
             projects: projectsParsed,
-            teamRequirements: teamsParsed
+            teams: teamsParsed
         };
     } catch (error) {
         console.error('[git-buster] Failed to load options:', error);

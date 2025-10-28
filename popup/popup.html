@@ -17,16 +17,6 @@
   <div>
       <button id="button-reload">Reload extension</button>
   </div>
-  <script>
-    document.getElementById('open-settings')?.addEventListener('click', () => {
-      try {
-        if (chrome?.runtime?.openOptionsPage) { chrome.runtime.openOptionsPage(); return; }
-        if (browser?.runtime?.openOptionsPage) { browser.runtime.openOptionsPage(); return; }
-      } catch {}
-      // Fallback: attempt to open settings page path
-      const url = chrome?.runtime?.getURL('settings/settings.html') || browser?.runtime?.getURL('settings/settings.html');
-      if (url) window.open(url, '_blank');
-    });
-  </script>
+  <script src="popup.js" type="text/javascript"></script>
 </body>
 </html>

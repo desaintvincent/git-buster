@@ -1,9 +1,10 @@
 /// <reference types="chrome" />
 // Shared domain types and utilities for git-buster
 
-export type ProjectGroup = { name: string; projects: string[] }
+export type Team = { name: string; members: string[] }
+export type ProjectRequirement = { team: string; approvalsRequired: number; reviewersRequired?: number }
+export type ProjectGroup = { name: string; projects: string[]; requirements?: ProjectRequirement[] }
 
-export type TeamRequirement = { name: string; members: string[]; approvalsRequired: number; reviewersRequired?: number }
 // Cross-browser API declarations
 declare global {
     var browser: typeof chrome | undefined;
@@ -13,10 +14,10 @@ export type Options = {
     enable?: boolean;
     username?: string;
     baseUrl?: string;
-    projects?: ProjectGroup[]; // Full PROJECTS variable attached to plugin options
-    teamRequirements?: TeamRequirement[]; // custom approval/reviewer team requirements
+    projects?: ProjectGroup[]; // groups with project paths & optional shared requirements
+    teams?: Team[];
     facultativeApprovers?: string[]; // Optional approvers that don't count towards required approvals
-    requiredApprovals?: number; // Number of required approvals
+    requiredApprovals?: number; // (legacy global) Number of required approvals
 }
 
 export type User = {
