@@ -67,8 +67,13 @@ Edge cases & notes:
 - Hotfix, ticket grouping, pipeline status, readiness and author scope filters persist between page loads using `localStorage` (older versions stored booleans for readiness; these are migrated automatically to the new tri-state values).
 - Author filter persists between page loads. "Mine" / "Others" are disabled if no `username` is configured.
 
-Configuration reminders (via the popup/options):
+Configuration reminders (managed in the extension Settings page):
 - `enable`: master switch
 - `baseUrl`: your GitLab base (e.g. https://gitlab.example.com)
 - `username`: used to decide which MRs are yours
-- `skipDrafts`, `ignoreAfterMonth`, `requiredApprovals`, `facultativeApprovers`
+- `projects`: JSON array of { name, projects:string[] }
+- `teamRequirements`: JSON array of { name, members:string[]; approvalsRequired:number; reviewersRequired?:number }
+- `requiredApprovals`: number of approvals required globally (optional)
+- `facultativeApprovers`: comma separated usernames that do not count toward required approvals
+
+Open the Settings page via the browser's extension details or the popup "Open Settings" button. Changes save automatically.
