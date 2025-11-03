@@ -4,8 +4,8 @@ const EXTENSION_NAME = 'git-buster'
 const notif = (str, type = 'success') => {
   const savedContainer = document.querySelector('#notif');
   if (!savedContainer) return;
-  savedContainer.innerHTML = `<div role="alert" class="alert alert-${type}"><span>${str}</span></div>`;
-  setTimeout(() => { savedContainer.innerHTML = ''; }, 2500);
+  savedContainer.innerHTML = `<div role="alert" class="alert alert-${type}">${str}</div>`;
+  setTimeout(() => { savedContainer.innerHTML = ''; }, 3000);
 }
 
 const browserAPI = (typeof browser !== 'undefined' && browser.storage) ? browser :
@@ -31,9 +31,7 @@ const AllOptions = [
   'baseUrl',
   'username',
   'projects',
-  'teams',
-  'facultativeApprovers',
-  'requiredApprovals'
+  'teams'
 ]
 
 const getValueFromType = (elem) => {
@@ -96,11 +94,11 @@ const listenElems = () => {
 const formatHint = () => {
   const el = document.getElementById('projects-hint');
   if (el) {
-    el.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example projects JSON:\n[\n  {\n    \"name\": \"Core\",\n    \"projects\": [\"group/frontend\", \"group/backend\"],\n    \"requirements\": [ { \"team\": \"Core Team\", \"approvalsRequired\": 1, \"reviewersRequired\": 1 } ]\n  }\n]</pre>`;
+    el.innerHTML = `Groups with shared requirements<pre>[\n  {\n    \"name\": \"Core\",\n    \"projects\": [\"group/frontend\", \"group/backend\"],\n    \"requirements\": [\n      {\n        \"team\": \"Core Team\",\n        \"approvalsRequired\": 1,\n        \"reviewersRequired\": 1\n      }\n    ]\n  }\n]</pre>`;
   }
   const teamsEl = document.getElementById('teams-hint');
   if (teamsEl) {
-    teamsEl.innerHTML = `<pre style="margin:0;white-space:pre-wrap;font-size:12px;">Example teams JSON:\n[\n  {\n    \"name\": \"Core Team\",\n    \"members\": [\"alice\", \"bob\"]\n  }\n]</pre>`;
+    teamsEl.innerHTML = `Team membership definitions<pre>[\n  {\n    \"name\": \"Core Team\",\n    \"members\": [\"alice\", \"bob\"]\n  }\n]</pre>`;
   }
 }
 

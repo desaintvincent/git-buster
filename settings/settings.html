@@ -5,62 +5,61 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="stylesheet" href="settings.css">
     <title>Git buster Settings</title>
-    <style>
-      .gb-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-      .input-container { display: flex; flex-direction: column; gap: 4px; min-width: 240px; }
-      .column { flex: 1 1 320px; }
-      textarea { font-family: monospace; }
-      label { font-weight: 500; }
-      .hint { opacity: .7; font-size: 12px; margin-top: 4px; }
-      #notif { margin-top: 16px; }
-      .alert { padding:8px 12px; border-radius:4px; background:#1f78d1; color:#fff; }
-      .alert-error { background:#b00020; }
-      .actions { margin-top:24px; display:flex; gap:12px; }
-      button { cursor:pointer; padding:6px 14px; font-size:14px; border-radius:6px; border:1px solid #0d4e8a; background:#1f78d1; color:#fff; }
-      button:hover { filter:brightness(1.1); }
-    </style>
 </head>
 <body>
-  <h1 style="margin-top:0">Git buster configuration</h1>
-  <p>Manage all extension options here. Changes save automatically.</p>
-  <div class="gb-grid">
-    <div class="input-container">
-        <label for="enable">Enable</label>
-        <input type="checkbox" id="enable" name="enable" />
+  <div class="settings-container">
+    <div class="settings-header">
+      <h1>Git buster configuration</h1>
+      <p class="settings-subtitle">Manage all extension options here. Changes save automatically.</p>
     </div>
-    <div class="input-container">
-        <label for="baseUrl">Base URL</label>
-        <input type="text" id="baseUrl" name="baseUrl" placeholder="https://gitlab.example.com/" />
+
+    <div class="settings-section">
+      <h2 class="section-title">General Settings</h2>
+      <div class="settings-grid">
+        <div class="form-group">
+          <label class="form-label" for="enable">
+            <input type="checkbox" id="enable" name="enable" class="form-checkbox" />
+            <span class="checkbox-label">Enable extension</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="baseUrl">Base URL</label>
+          <input type="text" id="baseUrl" name="baseUrl" class="form-input" placeholder="https://gitlab.example.com/" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="username">Your GitLab username</label>
+          <input type="text" id="username" name="username" class="form-input" />
+        </div>
+
+
+      </div>
     </div>
-    <div class="input-container">
-        <label for="username">Your GitLab username</label>
-        <input type="text" id="username" name="username" />
+
+    <div class="settings-section">
+      <h2 class="section-title">Advanced Configuration</h2>
+      <div class="settings-grid-wide">
+        <div class="form-group form-group-wide">
+          <label class="form-label" for="projects">Projects JSON</label>
+          <textarea id="projects" name="projects" class="form-textarea" rows="10" placeholder='[{"name":"Group A","projects":["namespace/proj1","namespace/proj2"],"requirements":[{"team":"Core Team","approvalsRequired":1,"reviewersRequired":1}]}]'></textarea>
+          <div id="projects-hint" class="form-hint"></div>
+        </div>
+
+        <div class="form-group form-group-wide">
+          <label class="form-label" for="teams">Teams JSON</label>
+          <textarea id="teams" name="teams" class="form-textarea" rows="8" placeholder='[{"name":"Core Team","members":["alice","bob"]}]'></textarea>
+          <div id="teams-hint" class="form-hint"></div>
+        </div>
+      </div>
     </div>
-    <div class="input-container">
-        <label for="requiredApprovals">Legacy global required approvals (optional)</label>
-        <input type="number" id="requiredApprovals" name="requiredApprovals" min="0" />
-        <div class="hint">Use per-project requirements instead when possible.</div>
+
+    <div class="settings-actions">
+      <button id="button-reload" type="button" class="btn btn-primary">Broadcast reload to tabs</button>
     </div>
-    <div class="input-container">
-        <label for="facultativeApprovers">Facultative approvers (comma separated)</label>
-        <input type="text" id="facultativeApprovers" name="facultativeApprovers" placeholder="alice,bob" />
-        <div class="hint">Optional approvers that do not count towards required approvals.</div>
-    </div>
-    <div class="input-container column">
-        <label for="projects">Projects JSON (groups with shared requirements)</label>
-        <textarea id="projects" name="projects" rows="10" placeholder='[{"name":"Group A","projects":["namespace/proj1","namespace/proj2"],"requirements":[{"team":"Core Team","approvalsRequired":1,"reviewersRequired":1}]}]'></textarea>
-        <div id="projects-hint" class="hint"></div>
-    </div>
-    <div class="input-container column">
-        <label for="teams">Teams JSON (membership only)</label>
-        <textarea id="teams" name="teams" rows="8" placeholder='[{"name":"Core Team","members":["alice","bob"]}]'></textarea>
-        <div id="teams-hint" class="hint"></div>
-    </div>
+
+    <div id="notif" class="notification-container"></div>
   </div>
-  <div class="actions">
-    <button id="button-reload" type="button">Broadcast reload to tabs</button>
-  </div>
-  <div id="notif"></div>
   <script src="settings.js" type="text/javascript"></script>
 </body>
 </html>

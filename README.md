@@ -73,7 +73,5 @@ Configuration reminders (managed in the extension Settings page):
 - `username`: used to decide which MRs are yours
 - `projects`: JSON array of groups: { name: string; projects: string[]; requirements?: [{ team: string; approvalsRequired: number; reviewersRequired?: number }] }
 - `teams`: JSON array of { name: string; members: string[] } defining membership used by project requirements
-- `requiredApprovals`: legacy global number of approvals (optional; prefer per-project requirements)
-- `facultativeApprovers`: comma separated usernames that do not count toward required approvals
 
 Open the Settings page via the browser's extension details or the popup "Open Settings" button. Changes save automatically.

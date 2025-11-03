@@ -20,7 +20,7 @@ const loadOptions = async (): Promise<Options> => {
 
     if (!browserAPI?.storage?.sync) {
         console.warn('[git-buster] No storage API available');
-        return { facultativeApprovers: [] };
+        return {};
     }
 
     try {
@@ -79,15 +79,15 @@ const loadOptions = async (): Promise<Options> => {
             console.error('[git-buster] config error:', teamsError)
         }
 
+        const { facultativeApprovers, requiredApprovals, ...rest } = scoppedOptions;
         return {
-            ...scoppedOptions,
-            facultativeApprovers: (scoppedOptions.facultativeApprovers ?? '').split(',').filter(Boolean),
+            ...rest,
             projects: projectsParsed,
             teams: teamsParsed
         };
     } catch (error) {
         console.error('[git-buster] Failed to load options:', error);
-        return { facultativeApprovers: [] };
+        return {};
     }
 }
 

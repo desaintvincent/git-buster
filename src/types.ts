@@ -16,8 +16,6 @@ export type Options = {
     baseUrl?: string;
     projects?: ProjectGroup[]; // groups with project paths & optional shared requirements
     teams?: Team[];
-    facultativeApprovers?: string[]; // Optional approvers that don't count towards required approvals
-    requiredApprovals?: number; // (legacy global) Number of required approvals
 }
 
 export type User = {
