@@ -31,9 +31,7 @@ const AllOptions = [
   'baseUrl',
   'username',
   'projects',
-  'teams',
-  'facultativeApprovers',
-  'requiredApprovals'
+  'teams'
 ]
 
 const getValueFromType = (elem) => {
