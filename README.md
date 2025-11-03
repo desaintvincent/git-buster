@@ -28,3 +28,52 @@ Add informations on the gitlab MR list
 | NOT_APPROVED_BY_ME       	 | ACTIONS 	 |
 | MISSING_APPROVALS        	 | WAIT    	 |
 | NEED_REBASE              	 | WAIT    	 |
+
+## Synthetic Overview Page
+A new sidebar button "Git Buster" is injected into the GitLab sidebar (super-sidebar or legacy) whenever you browse a URL that starts with your configured `baseUrl` and the extension is enabled.
+
+Clicking the button toggles a synthetic overview page that replaces the main content area and shows:
+- A table of the currently listed merge requests
+- Calculated tags and their badges
+- A consolidated badge per MR
+- Persistent local filters: Drafts, Hotfixes, Ticket grouping, Pipeline status, readiness filters (Approvers / Reviewers), and Author scope (All / Mine / Others)
+- Readiness filters are tri-state selects:
+  - Approvers: All | Ready | Not ready
+  - Reviewers: All | Ready | Not ready
+  Selecting Ready shows only MRs meeting all team counts; Not ready shows those missing at least one required approval/reviewer count.
+- Team requirement filters (ephemeral, shown only if any project has requirements):
+  - Approvals missing: All | Has missing | None missing (presence of any team below required approvals across visible MRs)
+  - Reviewers missing: All | Has missing | None missing (presence of any team below required reviewers across visible MRs)
+  - Team approvals: mode (All/Missing/Ready) + team selector (filters a specific team's approvals readiness)
+  - Team reviewers: mode (All/Missing/Ready) + team selector (filters a specific team's reviewers readiness)
+- Ephemeral filters: project, author, reviewer, approver (with invert toggles) that are not stored across reloads.
+- Per-MR magnifying glass button: if the MR title contains a JIRA-like ticket (e.g. ABC-123), clicking adds it to the title filter without duplication; disabled if no ticket pattern is found.
+- Per-MR columns include Approvals and Reviewers. Each shows avatars (if any) and a ✓/✗ readiness badge. When teams are missing counts, red team badges now appear on their own line beneath the avatars/status (not inline) and the entire cell content is right-aligned for compact stacking.
+- Missing team badges are embedded inside the Approvers and Reviewers cells (no separate columns).
+- Review meta (approvals & reviewers) is cached per MR until its `updated_at` changes. Fetches occur in small batches (default 5). A "Refresh review meta" button clears cached entries for currently visible MRs and refetches them incrementally.
+
+Hotfix definition (overview page filter):
+- Targets `main` or `master` branch OR
+- Title contains the ambulance emoji 🚑
+
+The overview header shows both total and currently displayed hotfix counts (Hotfixes: displayed/total). Hover the "Only hotfix MRs" checkbox to read the tooltip summarizing the definition.
+
+Click the button again to return to the normal GitLab view.
+
+Edge cases & notes:
+- The button reappears automatically after GitLab SPA navigations if it's removed.
+- Draft MRs and old MRs are filtered out according to your settings (`skipDrafts`, `ignoreAfterMonth`).
+- The page is purely client-side; no additional permissions were added beyond existing API calls.
+- Hotfix, ticket grouping, pipeline status, readiness and author scope filters persist between page loads using `localStorage` (older versions stored booleans for readiness; these are migrated automatically to the new tri-state values).
+- Author filter persists between page loads. "Mine" / "Others" are disabled if no `username` is configured.
+
+Configuration reminders (managed in the extension Settings page):
+- `enable`: master switch
+- `baseUrl`: your GitLab base (e.g. https://gitlab.example.com)
+- `username`: used to decide which MRs are yours
+- `projects`: JSON array of groups: { name: string; projects: string[]; requirements?: [{ team: string; approvalsRequired: number; reviewersRequired?: number }] }
+- `teams`: JSON array of { name: string; members: string[] } defining membership used by project requirements
+- `requiredApprovals`: legacy global number of approvals (optional; prefer per-project requirements)
+- `facultativeApprovers`: comma separated usernames that do not count toward required approvals
+
+Open the Settings page via the browser's extension details or the popup "Open Settings" button. Changes save automatically.
