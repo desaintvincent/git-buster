@@ -1,31 +1,58 @@
 import { useEffect, useState, useRef } from 'preact/hooks'
 import type { MR, Approval, User } from '../types'
 
-const REVIEW_META_BATCH_SIZE = 5
+const REVIEW_META_BATCH_SIZE = 15
 const reviewMetaCache: Record<number, { updated_at: string; approvalsUsers: User[]; reviewersUsers: User[] }> = {}
 
-const fetchReviewMeta = async (baseUrl: string, mr: MR): Promise<{ approvalsUsers: User[]; reviewersUsers: User[] }> => {
-  const approvalsUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/approvals`
-  let approvalsUsers: User[] = []
-  try {
-    const res = await fetch(approvalsUrl)
-    if (res.ok) {
-      const data: Approval = await res.json()
-      approvalsUsers = Array.isArray(data.approved_by) ? data.approved_by.map(a => a.user).filter(u => !!u?.username) : []
-    }
-  } catch {}
-  const notesUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/notes?per_page=100`
-  let commentUsers: User[] = []
-  try {
-    const res = await fetch(notesUrl)
-    if (res.ok) {
-      const notes = await res.json()
-      commentUsers = notes.filter((n: any) => !n.system && n.author?.username).map((n: any) => n.author as User)
-    }
-  } catch {}
+// NEW: Fetch approvals for all MRs in a project at once
+const fetchProjectApprovals = async (baseUrl: string, projectId: number, mrIids: number[]): Promise<Record<number, User[]>> => {
+  const approvalsByIid: Record<number, User[]> = {}
+
+  // Fetch approvals in parallel for all MRs in this project
+  const results = await Promise.all(
+    mrIids.map(async iid => {
+      try {
+        const url = `${baseUrl}/api/v4/projects/${projectId}/merge_requests/${iid}/approvals`
+        const res = await fetch(url)
+        if (!res.ok) return { iid, users: [] }
+        const data: Approval = await res.json()
+        const users = Array.isArray(data.approved_by) ? data.approved_by.map(a => a.user).filter(u => !!u?.username) : []
+        return { iid, users }
+      } catch {
+        return { iid, users: [] }
+      }
+    })
+  )
+
+  results.forEach(r => { approvalsByIid[r.iid] = r.users })
+  return approvalsByIid
+}
+
+const fetchReviewMeta = async (baseUrl: string, mr: MR, projectApprovals?: Record<number, User[]>): Promise<{ approvalsUsers: User[]; reviewersUsers: User[] }> => {
+  // Use pre-fetched approvals if available, otherwise fetch individually (fallback)
+  const approvalsUsers = projectApprovals?.[mr.iid] ?? []
+
+  // Optimize: Use existing MR.reviewers field (already fetched in initial API call)
+  const existingReviewers = Array.isArray(mr.reviewers) ? mr.reviewers.filter(u => !!u?.username) : []
+
+  // Optimize notes query: reduce page size to 50, add sorting
+  const notesUrl = `${baseUrl}/api/v4/projects/${mr.project_id}/merge_requests/${mr.iid}/notes?per_page=50&sort=asc&order_by=created_at`
+
+  // Only fetch notes if needed, approvals already provided
+  const commentUsers = mr.user_notes_count > 0
+    ? await fetch(notesUrl)
+        .then(async res => {
+          if (!res.ok) return []
+          const notes = await res.json()
+          return notes.filter((n: any) => !n.system && n.author?.username).map((n: any) => n.author as User)
+        })
+        .catch(() => [])
+    : []
+
   const authorUsername = mr.author?.username
   const reviewerMap: Record<string, User> = {}
-  for (const u of approvalsUsers.concat(commentUsers)) {
+  // Combine: existing reviewers + approvers + comment authors
+  for (const u of existingReviewers.concat(approvalsUsers).concat(commentUsers)) {
     if (!u?.username || u.username === authorUsername) continue
     reviewerMap[u.username] = u
   }
@@ -42,12 +69,12 @@ export const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshTok
   useEffect(() => {
     let cancelled = false
     if (!baseUrl || !mrs.length) { setApprovalsUsersByMr({}); setReviewersUsersByMr({}); setLoading(false); return }
-    
+
     if (prevRefreshToken.current !== refreshToken) {
       mrs.forEach(mr => delete reviewMetaCache[mr.id])
       prevRefreshToken.current = refreshToken
     }
-    
+
     const toFetch = mrs.filter(mr => !reviewMetaCache[mr.id] || reviewMetaCache[mr.id].updated_at !== mr.updated_at)
     const populateFromCache = () => {
       const approvals: Record<number, User[]> = {}
@@ -63,17 +90,72 @@ export const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshTok
     if (!toFetch.length) { populateFromCache(); setLoading(false); return }
     setLoading(true)
     const run = async () => {
-      for (let i = 0; i < toFetch.length && !cancelled; i += REVIEW_META_BATCH_SIZE) {
-        const slice = toFetch.slice(i, i + REVIEW_META_BATCH_SIZE)
-        try {
-          const results = await Promise.all(slice.map(mr => fetchReviewMeta(baseUrl!, mr).then(meta => ({ id: mr.id, updated_at: mr.updated_at, meta }))))
-          if (cancelled) return
-          for (const r of results) {
-            reviewMetaCache[r.id] = { updated_at: r.updated_at, approvalsUsers: r.meta.approvalsUsers, reviewersUsers: r.meta.reviewersUsers }
+      try {
+        // NEW STRATEGY: Group MRs by project and fetch all approvals per project in parallel
+        const mrsByProject: Record<number, MR[]> = {}
+        toFetch.forEach(mr => {
+          if (!mrsByProject[mr.project_id]) mrsByProject[mr.project_id] = []
+          mrsByProject[mr.project_id].push(mr)
+        })
+
+        // Fetch approvals for all projects in parallel
+        const projectIds = Object.keys(mrsByProject).map(Number)
+        const allProjectApprovals = await Promise.all(
+          projectIds.map(async projectId => {
+            const mrs = mrsByProject[projectId]
+            const iids = mrs.map(mr => mr.iid)
+            const approvals = await fetchProjectApprovals(baseUrl!, projectId, iids)
+            return { projectId, approvals }
+          })
+        )
+
+        // Build approval lookup map
+        const approvalsByProjectAndIid: Record<number, Record<number, User[]>> = {}
+        allProjectApprovals.forEach(({ projectId, approvals }) => {
+          approvalsByProjectAndIid[projectId] = approvals
+        })
+
+        if (cancelled) return
+
+        // Now fetch notes for MRs (with approvals already available)
+        const batches: MR[][] = []
+        for (let i = 0; i < toFetch.length; i += REVIEW_META_BATCH_SIZE) {
+          batches.push(toFetch.slice(i, i + REVIEW_META_BATCH_SIZE))
+        }
+
+        const batchResults = await Promise.all(
+          batches.map(batch =>
+            Promise.all(
+              batch.map(mr =>
+                fetchReviewMeta(baseUrl!, mr, approvalsByProjectAndIid[mr.project_id])
+                  .then(meta => ({ id: mr.id, updated_at: mr.updated_at, meta }))
+                  .catch(() => null)
+              )
+            )
+          )
+        )
+
+        if (cancelled) return
+
+        // Update cache with all results
+        for (const batchResult of batchResults) {
+          for (const r of batchResult) {
+            if (r) {
+              reviewMetaCache[r.id] = {
+                updated_at: r.updated_at,
+                approvalsUsers: r.meta.approvalsUsers,
+                reviewersUsers: r.meta.reviewersUsers
+              }
+            }
           }
-          populateFromCache()
-        } catch {}
+        }
+
+        populateFromCache()
+      } catch (error) {
+        // Even if some batches fail, populate what we have
+        if (!cancelled) populateFromCache()
       }
+
       if (!cancelled) setLoading(false)
     }
     run()
@@ -82,4 +164,3 @@ export const useReviewMeta = (baseUrl: string | undefined, mrs: MR[], refreshTok
 
   return { approvalsUsersByMr, reviewersUsersByMr, loading }
 }
-

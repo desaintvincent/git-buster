@@ -246,7 +246,7 @@ const OverviewRoot = ({ options, initialVisible }: OverviewProps) => {
   return (
     <div className="gb-container">
       <div className="gb-header-row">
-        <h1>Git Buster Overview</h1>
+        <h1>Git Buster Overview 2</h1>
         <div className="gb-header-right">
           {(loading || (reviewMetaLoading && !!authorFiltered.length) || error) && (
             <div className="gb-header-status">
